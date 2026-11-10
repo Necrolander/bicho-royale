@@ -1165,7 +1165,12 @@ export default function Royale() {
               {page === 'deposit' && (
                 <DepositScreen pixEnabled={data.paymentsEnabled} mpEnabled={data.mercadoPagoEnabled} registered={!!data.user?.email} />
               )}
-              {page === 'withdrawal' && <WithdrawalsDemo />}
+              {page === 'withdrawal' && (
+                <WithdrawalsDemo
+                  points={data.user?.points || 0}
+                  onNavigate={(destination) => navigate(destination)}
+                />
+              )}
               {activePage === 'admin' &&
                 (data.user?.role === 'ADMIN' ? (
                   <Admin notify={notify} refresh={load} />
