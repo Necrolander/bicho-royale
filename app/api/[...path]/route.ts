@@ -121,14 +121,13 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           controller.enqueue(new TextEncoder().encode('retry: 3000\n\n'));
           timer = setInterval(() => {
             try {
-              advanceRounds();
               controller.enqueue(
                 new TextEncoder().encode(`data: ${JSON.stringify({ time: Date.now() })}\n\n`),
               );
             } catch {
               clearInterval(timer);
             }
-          }, 3000);
+          }, 15000);
           req.signal.addEventListener('abort', () => {
             clearInterval(timer);
             try {

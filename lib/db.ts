@@ -48,6 +48,44 @@ function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
 }
 export function initialize() {
   if (!cloudEnabled() || globalPg.royaleReady) return;
+  if (cloudEnabled()) {
+    // A serverless cold start must not seed each row with a separate network
+    // round trip through Supabase's transaction pooler. Batch the idempotent
+    // seed data into a handful of statements; the schema is installed by the
+    // checked-in Supabase migration.
+    transaction(() => {
+      run('INSERT OR IGNORE INTO roles VALUES(?),(?)', 'USER', 'ADMIN');
+      const animalValues = animals.map(() => '(?,?,?)').join(',');
+      run(
+        `INSERT OR IGNORE INTO animals VALUES${animalValues}`,
+        ...animals.flatMap((animal) => [animal.id, animal.name, JSON.stringify(animal.tens)]),
+      );
+      const modeValues = modes.map(() => '(?,?)').join(',');
+      run(
+        `INSERT OR IGNORE INTO modes VALUES${modeValues}`,
+        ...modes.flatMap((mode) => [mode.id, JSON.stringify(mode)]),
+      );
+      const defaults = Object.entries({
+        platform: 'BICHOS VEGAS', paused: false, duration: 7, scheduleSeconds: 90,
+        logo: '', accent: '#D4AF37', banner: '', locale: 'pt', sound: false,
+        animations: true, rules: defaultRules,
+        announcement: 'Uma experiência de entretenimento. Todos os créditos são fictícios e não transferíveis.',
+        scratch: defaultScratchConfig,
+      });
+      const settingValues = defaults.map(() => '(?,?)').join(',');
+      run(
+        `INSERT OR IGNORE INTO settings VALUES${settingValues}`,
+        ...defaults.flatMap(([key, value]) => [key, JSON.stringify(value)]),
+      );
+      run(
+        'INSERT OR IGNORE INTO content_pages VALUES(?,?,?)',
+        'faq', 'Central de ajuda',
+        'Os créditos têm valor? Não. São pontos demonstrativos, sem conversão, transferência ou resgate.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Todos os sorteios são simulações independentes.',
+      );
+    });
+    globalPg.royaleReady = true;
+    return;
+  }
   transaction(() => {
     ['USER', 'ADMIN'].forEach((x) => run('INSERT OR IGNORE INTO roles VALUES(?)', x));
     animals.forEach((x) => run('INSERT OR IGNORE INTO animals VALUES(?,?,?)', x.id, x.name, JSON.stringify(x.tens)));

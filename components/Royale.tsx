@@ -318,7 +318,7 @@ export default function Royale() {
   useEffect(() => {
     void load();
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    const poll = setInterval(() => void load(), 10000);
+    const poll = setInterval(() => void load(), 30000);
     if (sessionStorage.getItem('royale-splash-seen')) setSplash(false);
     else {
       sessionStorage.setItem('royale-splash-seen', '1');
