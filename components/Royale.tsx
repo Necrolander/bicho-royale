@@ -1239,7 +1239,14 @@ export default function Royale() {
                 />
               )}
               {page === 'deposit' && (
-                <DepositScreen pixEnabled={data.paymentsEnabled} mpEnabled={data.mercadoPagoEnabled} registered={!!data.user?.email} />
+                <DepositScreen
+                  pixEnabled={data.paymentsEnabled}
+                  mpEnabled={data.mercadoPagoEnabled}
+                  registered={!!data.user?.email}
+                  points={data.user?.points || 0}
+                  onRegister={openRegistration}
+                  onViewAccount={() => navigate('profile')}
+                />
               )}
               {page === 'profile' && data.user && (
                 <section className="account-profile-page">

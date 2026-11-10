@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from './Royale';
 import MercadoPagoCheckout from './MercadoPagoCheckout';
+import { ArrowRight, BadgeCheck, CircleAlert, Clock3, CreditCard, QrCode, ShieldCheck, Wallet } from 'lucide-react';
 
 type PixDeposit = { id: string; txid: string; amount_cents: number; amountCents?: number; status: string; copy_paste?: string; copyPaste?: string; created_at?: string };
 type MPDeposit = {
@@ -21,13 +22,53 @@ type MPDeposit = {
   payment_id?: string;
 };
 
-export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { pixEnabled: boolean; mpEnabled: boolean; registered: boolean }) {
+function depositStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    PENDING: 'Aguardando pagamento',
+    CREATING: 'Preparando pagamento',
+    CONFIRMED: 'Pagamento confirmado',
+    APPROVED: 'Pagamento aprovado',
+    REJECTED: 'Pagamento recusado',
+    CANCELLED: 'Cancelado',
+    EXPIRED: 'Expirado',
+  };
+  return labels[status] || status.toLowerCase().replaceAll('_', ' ');
+}
+
+function paymentLabel(method: string) {
+  return method === 'credit_card' ? 'Cartão' : method === 'boleto' ? 'Boleto' : 'Pix';
+}
+
+async function copyPix(code: string, setMessage: (message: string) => void) {
+  try {
+    await navigator.clipboard.writeText(code);
+    setMessage('Código Pix copiado.');
+  } catch {
+    setMessage('Não foi possível copiar automaticamente. Selecione e copie o código Pix.');
+  }
+}
+
+export default function DepositScreen({
+  pixEnabled,
+  mpEnabled,
+  registered,
+  points,
+  onRegister,
+  onViewAccount,
+}: {
+  pixEnabled: boolean;
+  mpEnabled: boolean;
+  registered: boolean;
+  points: number;
+  onRegister: () => void;
+  onViewAccount: () => void;
+}) {
   const [amount, setAmount] = useState('10.00');
   const [pixItems, setPixItems] = useState<PixDeposit[]>([]);
   const [mpItems, setMpItems] = useState<MPDeposit[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'pix' | 'mp'>('pix');
+  const [activeTab, setActiveTab] = useState<'pix' | 'mp'>(pixEnabled ? 'pix' : 'mp');
   const [showMPCheckout, setShowMPCheckout] = useState(false);
   const [selectedMPMethod, setSelectedMPMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
   const [userEmail, setUserEmail] = useState('');
@@ -64,7 +105,7 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
     setShowMPCheckout(true);
   };
 
-  const handleMPSuccess = async (result: any) => {
+  const handleMPSuccess = async () => {
     setShowMPCheckout(false);
     await load();
     setMessage('Pagamento aprovado! Créditos adicionados.');
@@ -93,31 +134,47 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
   };
 
   const renderDepositForm = () => {
-    if (!registered) return <p>Crie uma conta com e-mail e senha antes de solicitar um depósito.</p>;
-    if (!pixEnabled && !mpEnabled) return <p>Depósitos ainda não estão disponíveis. A configuração bancária e a liberação da operação estão pendentes.</p>;
+    if (!registered) return (
+      <div className="deposit-unavailable">
+        <div className="deposit-unavailable-icon"><Wallet size={19} /></div>
+        <div><b>Entre na sua conta para continuar</b><p>Seu histórico e os créditos ficam vinculados ao seu cadastro.</p></div>
+        <button className="primary" onClick={onRegister}>Entrar ou cadastrar <ArrowRight size={15} /></button>
+      </div>
+    );
+    if (!pixEnabled && !mpEnabled) return (
+      <div className="deposit-unavailable">
+        <div className="deposit-unavailable-icon"><CircleAlert size={19} /></div>
+        <div><b>Depósitos temporariamente indisponíveis</b><p>Nenhum meio de pagamento está habilitado agora. Tente novamente mais tarde.</p></div>
+      </div>
+    );
 
     return (
       <div className="deposit-form">
-        <label className="field">Valor em reais<input type="number" min="1" max="1000" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
+        <div className="deposit-amount-picker">
+          <div className="deposit-picker-heading"><span>1</span><div><b>Escolha o valor</b><small>De R$ 1,00 a R$ 1.000,00</small></div></div>
+          <div className="deposit-presets" aria-label="Valores sugeridos">
+            {['10.00', '25.00', '50.00', '100.00'].map((value) => (
+              <button type="button" key={value} className={amount === value ? 'selected' : ''} onClick={() => setAmount(value)}>
+                R$ {Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </button>
+            ))}
+          </div>
+          <label className="deposit-amount-field"><span>R$</span><input aria-label="Outro valor em reais" type="text" inputMode="decimal" placeholder="Outro valor" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
+        </div>
+        <div className="deposit-picker-heading deposit-payment-heading"><span>2</span><div><b>Escolha como pagar</b><small>O pagamento é confirmado pelo provedor</small></div></div>
         {pixEnabled && (
-          <button className="primary" disabled={busy || activeTab !== 'pix'} onClick={() => void createPix()}>
-            {activeTab === 'pix' ? 'Gerar Pix (Efí)' : 'Gerar Pix (Efí)'}
+          activeTab === 'pix' && <button className="primary deposit-pay-button" disabled={busy} onClick={() => void createPix()}>
+            <QrCode size={17} /> {busy ? 'Gerando Pix…' : 'Gerar QR Code Pix'} <ArrowRight size={15} />
           </button>
         )}
-        {mpEnabled && (
-          <div style={{ marginTop: 8 }}>
-            <button className="primary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('pix')}>
-              Pagar com Mercado Pago (Pix)
-            </button>
-            <button className="secondary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('credit_card')}>
-              Pagar com Mercado Pago (Cartão)
-            </button>
-            <button className="secondary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('boleto')}>
-              Pagar com Mercado Pago (Boleto)
-            </button>
+        {mpEnabled && activeTab === 'mp' && (
+          <div className="deposit-mp-methods">
+            <button className="primary" disabled={busy || showMPCheckout} onClick={() => openMPCheckout('pix')}><QrCode size={16} /> Pix</button>
+            <button className="secondary" disabled={busy || showMPCheckout} onClick={() => openMPCheckout('credit_card')}><CreditCard size={16} /> Cartão</button>
+            <button className="secondary" disabled={busy || showMPCheckout} onClick={() => openMPCheckout('boleto')}><Wallet size={16} /> Boleto</button>
           </div>
         )}
-        <p>A confirmação vem diretamente do provedor. Não envie comprovantes pelo site.</p>
+        <p className="deposit-security-note"><ShieldCheck size={14} /> A confirmação é consultada junto ao provedor. Não envie comprovantes ou dados do cartão pelo chat.</p>
       </div>
     );
   };
@@ -132,13 +189,13 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
         const code = pix.copy_paste || pix.copyPaste;
         return (
           <div className="deposit-item" key={item.id}>
-            <b>R$ {((pix.amount_cents || pix.amountCents || 0) / 100).toFixed(2).replace('.', ',')}</b>
-            <span>{pix.status}</span>
+            <div className="deposit-history-heading"><span><QrCode size={15} /> Pix Efí</span><b>R$ {((pix.amount_cents || pix.amountCents || 0) / 100).toFixed(2).replace('.', ',')}</b></div>
+            <span className={`deposit-status ${pix.status.toLowerCase()}`}><i />{depositStatusLabel(pix.status)}</span>
             {pix.status === 'PENDING' && code && <>
-              <QRCodeSVG value={code} size={180} marginSize={2} />
-              <textarea readOnly aria-label="Pix copia e cola" value={code} rows={3} />
-              <button className="secondary" onClick={() => void navigator.clipboard.writeText(code)}>Copiar código Pix</button>
-              <button className="secondary" disabled={busy} onClick={() => void refreshPix(pix.id)}>Verificar pagamento</button>
+              <div className="deposit-qr-wrap"><QRCodeSVG value={code} size={170} marginSize={2} /></div>
+              <label className="deposit-copy-label">Pix copia e cola<textarea readOnly aria-label="Pix copia e cola" value={code} rows={3} /></label>
+              <button className="secondary" onClick={() => void copyPix(code, setMessage)}>Copiar código Pix</button>
+              <button className="secondary" disabled={busy} onClick={() => void refreshPix(pix.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
           </div>
         );
@@ -148,8 +205,8 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
 
         return (
           <div className="deposit-item" key={item.id}>
-            <b>R$ {((mp.amount_cents || 0) / 100).toFixed(2).replace('.', ',')}</b>
-            <span>{mp.status} · {mp.payment_method}</span>
+            <div className="deposit-history-heading"><span>{mp.payment_method === 'credit_card' ? <CreditCard size={15} /> : mp.payment_method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(mp.payment_method)}</span><b>R$ {((mp.amount_cents || 0) / 100).toFixed(2).replace('.', ',')}</b></div>
+            <span className={`deposit-status ${mp.status.toLowerCase()}`}><i />{depositStatusLabel(mp.status)}</span>
             {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
               {mp.qr_code_base64 && (
                 <div style={{ marginTop: 8, textAlign: 'center' }}>
@@ -159,7 +216,7 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
               {mp.qr_code && !mp.qr_code_base64 && (
                 <div style={{ marginTop: 8 }}>
                   <textarea readOnly value={mp.qr_code} rows={3} style={{ width: '100%' }} />
-                  <button className="secondary" onClick={() => void navigator.clipboard.writeText(mp.qr_code || '')}>Copiar código PIX</button>
+                  <button className="secondary" onClick={() => void copyPix(mp.qr_code || '', setMessage)}>Copiar código Pix</button>
                 </div>
               )}
               {mp.ticket_url && (
@@ -167,37 +224,66 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
                   Ver comprovante
                 </a>
               )}
-              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}>Verificar pagamento</button>
+              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
             {isPending && !mp.qr_code && !mp.qr_code_base64 && !mp.ticket_url && mp.init_point && <>
               <a href={mp.init_point} target="_blank" rel="noopener noreferrer" className="primary" style={{ display: 'inline-block', marginTop: 8 }}>
                 Acessar pagamento (Checkout Pro)
               </a>
-              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}>Verificar pagamento</button>
+              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
-            {mp.status === 'CONFIRMED' && <span style={{ color: 'var(--success)' }}>✓ Confirmado</span>}
+            {mp.status === 'CONFIRMED' && <span className="deposit-confirmed"><BadgeCheck size={14} /> Créditos confirmados</span>}
           </div>
         );
       }
     });
   };
 
-  return <div className="pix-deposit-layout">
-    <section className="surface">
-      <span className="eyebrow">DEPÓSITOS</span>
-      <h2>Adicionar créditos</h2>
-      <div className="tabs" role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {pixEnabled && <button role="tab" aria-selected={activeTab === 'pix'} onClick={() => setActiveTab('pix')} className={activeTab === 'pix' ? 'primary' : 'secondary'}>Efí Pix</button>}
-        {mpEnabled && <button role="tab" aria-selected={activeTab === 'mp'} onClick={() => setActiveTab('mp')} className={activeTab === 'mp' ? 'primary' : 'secondary'}>Mercado Pago</button>}
+  return <div className="deposit-page">
+    <section className="surface deposit-page-hero">
+      <div className="deposit-page-hero-copy">
+        <span className="eyebrow"><Wallet size={14} /> CARTEIRA BICHOS VEGAS</span>
+        <h2>Adicionar créditos</h2>
+        <p>Escolha um valor e pague pelo método que preferir. Você acompanha a confirmação e o histórico por aqui.</p>
+        <div className="deposit-trust-points">
+          <span><ShieldCheck size={14} /> Confirmação pelo provedor</span>
+          <span><Clock3 size={14} /> Status atualizado nesta tela</span>
+        </div>
       </div>
-      {renderDepositForm()}
-      {message && <p role="alert">{message}</p>}
+      <button className="deposit-balance-card" onClick={onViewAccount}>
+        <span>SEU SALDO ATUAL</span>
+        <strong>{points.toLocaleString('pt-BR')}</strong>
+        <small>créditos <ArrowRight size={13} /></small>
+      </button>
     </section>
-    <section className="surface">
-      <span className="eyebrow">SEUS DEPÓSITOS</span>
-      <h2>Acompanhe a confirmação</h2>
-      {renderDepositList()}
-    </section>
+
+    <div className="pix-deposit-layout">
+      <section className="surface deposit-builder">
+        <div className="deposit-section-heading">
+          <div className="deposit-section-icon"><CreditCard size={18} /></div>
+          <div><span className="eyebrow">NOVO PAGAMENTO</span><h3>Como deseja adicionar?</h3></div>
+        </div>
+        {registered && (pixEnabled || mpEnabled) && (
+          <div className="deposit-provider-tabs" role="tablist" aria-label="Provedor de pagamento">
+            {pixEnabled && <button role="tab" aria-selected={activeTab === 'pix'} onClick={() => { setActiveTab('pix'); setMessage(''); }} className={activeTab === 'pix' ? 'selected' : ''}><QrCode size={16} /><span><b>Pix Efí</b><small>QR Code e copia e cola</small></span></button>}
+            {mpEnabled && <button role="tab" aria-selected={activeTab === 'mp'} onClick={() => { setActiveTab('mp'); setMessage(''); }} className={activeTab === 'mp' ? 'selected' : ''}><Wallet size={16} /><span><b>Mercado Pago</b><small>Pix, cartão ou boleto</small></span></button>}
+          </div>
+        )}
+        {activeTab === 'pix' && pixEnabled && registered && <p className="deposit-provider-hint">Pagamento Pix pela Efí. O QR Code é gerado após confirmar o valor.</p>}
+        {activeTab === 'mp' && mpEnabled && registered && <p className="deposit-provider-hint">Pagamento processado pelo Mercado Pago. Escolha Pix, cartão ou boleto.</p>}
+        {renderDepositForm()}
+        {message && <div className={`deposit-message ${message.includes('copiado') || message.includes('aprovado') ? 'success' : ''}`} role="status"><CircleAlert size={15} />{message}</div>}
+      </section>
+
+      <section className="surface deposit-history">
+        <div className="deposit-section-heading">
+          <div className="deposit-section-icon"><Clock3 size={18} /></div>
+          <div><span className="eyebrow">SEU HISTÓRICO</span><h3>Pagamentos e confirmações</h3></div>
+        </div>
+        <p className="deposit-history-intro">{activeTab === 'pix' ? 'Atividade de Pix pela Efí.' : 'Atividade processada pelo Mercado Pago.'}</p>
+        <div className="deposit-history-list">{renderDepositList()}</div>
+      </section>
+    </div>
 
     {showMPCheckout && userEmail && (
       <MercadoPagoCheckout
