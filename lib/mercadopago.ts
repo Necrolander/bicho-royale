@@ -177,13 +177,16 @@ export async function createMercadoPagoPayment(
   token?: string, // Token do cartão (checkout transparente)
   installments?: number,
   issuerId?: string,
-  payerIdentification?: { type: string; number: string }
+  payerIdentification?: { type: string; number: string },
+  cardPaymentMethodId?: string
 ): Promise<CreatePaymentResult> {
   const config = loadConfig();
   requirePayments(config);
+  if (paymentMethod === 'credit_card' && (!token || !cardPaymentMethodId))
+    throw new ApiError(400, 'Preencha os dados do cartão para continuar');
   const id = randomUUID();
   const externalReference = randomUUID();
-  const mpPaymentMethod = mapPaymentMethod(paymentMethod);
+  const mpPaymentMethod = paymentMethod === 'credit_card' ? cardPaymentMethodId! : mapPaymentMethod(paymentMethod);
 
   transaction(() => {
     run('INSERT INTO mercadopago_deposits(id,user_id,external_reference,amount_cents,payment_method,status,init_point,sandbox_init_point,created_at,confirmed_at,payment_id,qr_code,qr_code_base64,ticket_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, userId, externalReference, amountCents, paymentMethod.toUpperCase(), 'CREATING', null, null, new Date().toISOString(), null, null, null, null, null);

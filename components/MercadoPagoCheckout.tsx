@@ -9,6 +9,7 @@ interface CreatePaymentRequest {
   paymentMethod: PaymentMethod;
   token?: string;
   installments?: number;
+  paymentMethodId?: string;
   issuerId?: string;
   identificationType?: string;
   identificationNumber?: string;
@@ -56,7 +57,7 @@ export default function MercadoPagoCheckout({
   const [paymentResult, setPaymentResult] = useState<CreatePaymentResponse | null>(null);
   const [cardForm, setCardForm] = useState<any>(null);
   const [showCardForm, setShowCardForm] = useState(false);
-  const cardFormRef = useRef<HTMLDivElement>(null);
+  const cardFormRef = useRef<HTMLFormElement>(null);
   const mpInstanceRef = useRef<any>(null);
   const paymentCreated = useRef(false);
 
@@ -110,22 +111,35 @@ export default function MercadoPagoCheckout({
   const initializeCardForm = () => {
     if (!mpInstanceRef.current || !cardFormRef.current) return;
     try {
-      const cardFormInstance = mpInstanceRef.current.cardForm({
-        amount: amountCents / 100,
+      let cardFormInstance: any;
+      cardFormInstance = mpInstanceRef.current.cardForm({
+        amount: (amountCents / 100).toFixed(2),
         iframe: true,
+        autoMount: false,
         form: {
-          id: 'card-form',
-          cardNumber: { id: 'cardNumber', placeholder: 'Número do cartão' },
-          expirationDate: { id: 'expirationDate', placeholder: 'MM/AA' },
-          securityCode: { id: 'securityCode', placeholder: 'Código de segurança' },
-          cardholderName: { id: 'cardholderName', placeholder: 'Nome no cartão' },
-          issuer: { id: 'issuer', placeholder: 'Banco emissor' },
-          installments: { id: 'installments', placeholder: 'Parcelas' },
-          identificationType: { id: 'identificationType', placeholder: 'Tipo de documento' },
-          identificationNumber: { id: 'identificationNumber', placeholder: 'Número do documento' },
+          id: 'form-checkout',
+          cardNumber: { id: 'form-checkout__cardNumber', placeholder: 'Número do cartão' },
+          expirationDate: { id: 'form-checkout__expirationDate', placeholder: 'MM/AA' },
+          securityCode: { id: 'form-checkout__securityCode', placeholder: 'Código de segurança' },
+          cardholderName: { id: 'form-checkout__cardholderName', placeholder: 'Nome no cartão' },
+          issuer: { id: 'form-checkout__issuer', placeholder: 'Banco emissor' },
+          installments: { id: 'form-checkout__installments', placeholder: 'Parcelas' },
+          identificationType: { id: 'form-checkout__identificationType', placeholder: 'Tipo de documento' },
+          identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Número do documento' },
         },
         callbacks: {
-          onSubmit: (data: any) => handleCardSubmit(data),
+          onFormMounted: (error: any) => {
+            if (error) {
+              const message = 'Não foi possível montar os campos do cartão. Confira a chave pública de sandbox.';
+              setErrorMessage(message);
+              setStatus('error');
+              onError(message);
+            }
+          },
+          onSubmit: (event: Event) => {
+            event.preventDefault();
+            void handleCardSubmit(cardFormInstance.getCardFormData());
+          },
           onError: (error: any) => {
             const message = error?.message || 'Não foi possível carregar os campos do cartão.';
             setErrorMessage(message);
@@ -141,10 +155,13 @@ export default function MercadoPagoCheckout({
           },
         },
       });
-      cardFormInstance.mount('#card-form');
+      cardFormInstance.mount();
       setCardForm(cardFormInstance);
     } catch (error) {
-      console.error('Erro ao inicializar card form:', error);
+      const message = error instanceof Error ? error.message : 'Não foi possível inicializar o formulário do cartão.';
+      setErrorMessage(message);
+      setStatus('error');
+      onError(message);
     }
   };
 
@@ -155,8 +172,9 @@ export default function MercadoPagoCheckout({
         amountCents,
         paymentMethod: 'credit_card',
         token: data.token,
-        installments: data.installments,
-        issuerId: data.issuer?.id,
+        installments: Number(data.installments),
+        paymentMethodId: data.paymentMethodId,
+        issuerId: data.issuerId,
         identificationType: data.identificationType,
         identificationNumber: data.identificationNumber,
       });
@@ -381,9 +399,26 @@ export default function MercadoPagoCheckout({
           {paymentMethod === 'credit_card' && (
             <div className="mp-card-payment">
               <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
-              <div id="card-form" ref={cardFormRef} className="mp-card-form"></div>
-              {loading && <div className="mp-submit-loading">Processando...</div>}
-              <button className="secondary" onClick={onClose}>Cancelar</button>
+              <form id="form-checkout" ref={cardFormRef} className="mp-card-form">
+                <label>Número do cartão<div id="form-checkout__cardNumber" className="mp-card-hosted-field" /></label>
+                <div className="mp-card-row">
+                  <label>Validade<div id="form-checkout__expirationDate" className="mp-card-hosted-field" /></label>
+                  <label>CVV<div id="form-checkout__securityCode" className="mp-card-hosted-field" /></label>
+                </div>
+                <label>Nome impresso no cartão<input id="form-checkout__cardholderName" autoComplete="cc-name" /></label>
+                <label>CPF
+                  <input id="form-checkout__identificationNumber" inputMode="numeric" autoComplete="off" />
+                </label>
+                <label>Tipo de documento<select id="form-checkout__identificationType" defaultValue="CPF" /></label>
+                <label>Banco emissor<select id="form-checkout__issuer" defaultValue="" /></label>
+                <label>Parcelas<select id="form-checkout__installments" defaultValue="" /></label>
+                <div className="mp-checkout-actions">
+                  <button className="primary" type="submit" disabled={loading || !cardForm}>
+                    {loading ? 'Processando…' : 'Continuar para pagar'}
+                  </button>
+                  <button className="secondary" type="button" onClick={onClose}>Cancelar</button>
+                </div>
+              </form>
             </div>
           )}
         </>

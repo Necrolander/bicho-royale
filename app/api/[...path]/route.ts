@@ -255,6 +255,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         paymentMethod: z.enum(['pix', 'credit_card', 'boleto']).default('pix'),
         token: z.string().optional(),
         installments: z.number().int().min(1).max(12).optional(),
+        paymentMethodId: z.string().min(1).optional(),
         issuerId: z.string().optional(),
         identificationType: z.string().optional(),
         identificationNumber: z.string().optional(),
@@ -272,7 +273,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         input.issuerId,
         input.identificationType && input.identificationNumber
           ? { type: input.identificationType, number: input.identificationNumber }
-          : (input.paymentMethod === 'pix' && userCpf ? { type: 'CPF', number: userCpf.replace(/\D/g, '') } : undefined)
+          : (input.paymentMethod === 'pix' && userCpf ? { type: 'CPF', number: userCpf.replace(/\D/g, '') } : undefined),
+        input.paymentMethodId
       ), 201);
     }
     if (path === 'mercadopago/refresh' && post) {
