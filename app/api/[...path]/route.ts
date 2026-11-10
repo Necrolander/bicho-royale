@@ -261,7 +261,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         settings: platformSettings,
         recentWins,
         rounds: all(
-          "SELECT r.* FROM rounds r WHERE r.type='ROULETTE' ORDER BY r.created_at DESC LIMIT 100",
+          "SELECT r.*,d.video_id,d.video_url FROM rounds r LEFT JOIN external_draws d ON d.round_id=r.id WHERE r.type='ROULETTE' ORDER BY r.created_at DESC LIMIT 100",
         ).map(publicRound),
         entries: user
           ? all(
