@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL, displayPrizeLabel } from '@/lib/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -690,7 +691,7 @@ export default function Royale() {
             <ShieldCheck size={24} />
             <b>Diversão com transparência</b>
             <p>
-              Pontos 100% virtuais.
+              Saldo 100% demonstrativo.
               <br />
               Experiência Bichos Vegas.
             </p>
@@ -737,7 +738,7 @@ export default function Royale() {
           </nav>
           <div className="top-actions">
             <button className="balance" onClick={() => navigate('profile')}>
-              <b>{data?.user?.points.toLocaleString('pt-BR') || '—'} pts</b>
+              <b>{data?.user ? formatBRL(data.user.points) : '—'}</b>
               <ChevronRight size={13} />
             </button>
             <button className="header-money-action" onClick={() => navigate('deposit')}>
@@ -816,8 +817,8 @@ export default function Royale() {
                     )}
                     <span>
                       <small>{item.isResult ? 'RESULTADO DEMO' : item.game}</small>
-                      <b>{item.label}</b>
-                      <em>R$ {(item.points / 100).toFixed(2).replace('.', ',')}</em>
+                      <b>{displayPrizeLabel(item.label, item.points)}</b>
+                      <em>{formatBRL(item.points)}</em>
                     </span>
                   </article>
                 ))}
@@ -921,7 +922,7 @@ export default function Royale() {
                         <button className="primary" onClick={() => navigate('roulette')}>Ir para a roletinha <ArrowRight size={17} /></button>
                         <button className="secondary" onClick={() => navigate('scratch')}>Ver raspadinhas <Ticket size={16} /></button>
                       </div>
-                      <small><ShieldCheck size={13} /> Créditos demonstrativos, sem valor monetário.</small>
+                      <small><ShieldCheck size={13} /> Saldo demonstrativo, sem valor de saque.</small>
                     </div>
                     <div className="home-hero-art" aria-label="Último resultado da roleta">
                       <div className="home-art-orbit home-art-orbit-one" />
@@ -957,7 +958,7 @@ export default function Royale() {
                   </div>
                   <div className="home-trust-row">
                     <div><ShieldCheck size={17} /><span><b>Resultados publicados</b><small>Confira os giros recentes</small></span></div>
-                    <div><Wallet size={17} /><span><b>Créditos virtuais</b><small>Sem depósitos ou saques reais</small></span></div>
+                    <div><Wallet size={17} /><span><b>Saldo demonstrativo</b><small>Sem depósitos ou saques reais</small></span></div>
                     <div><Ticket size={17} /><span><b>{data.scratchCards.length} cartões registrados</b><small>Seu histórico fica na conta</small></span></div>
                   </div>
                   {latestRouletteResult?.result?.group && <button className="home-results-link" onClick={() => navigate('roulette')}>Ver todos os resultados da roletinha <ArrowRight size={15} /></button>}
@@ -1049,7 +1050,7 @@ export default function Royale() {
                       <div className="points-row">
                         <span>Participação demonstrativa</span>
                         <b>
-                          {rouletteAnimals.length * 10} <small>pts no total</small>
+                          {formatBRL(rouletteAnimals.length * 10)} <small>no total</small>
                         </b>
                       </div>
                       <button
@@ -1065,7 +1066,7 @@ export default function Royale() {
                         Rever último giro publicado
                       </button>
                       <p className="micro">
-                        <LockKeyhole size={12} /> Pontos fictícios, sem valor monetário
+                        <LockKeyhole size={12} /> Saldo demonstrativo, sem valor de saque
                       </p>
                       <div className="panel-tip">
                         <Info size={17} />
@@ -1079,8 +1080,8 @@ export default function Royale() {
                   <div className="metric-strip">
                     <Metric
                       icon={Wallet}
-                      label="Seus créditos demonstrativos"
-                      value={`${data.user?.points.toLocaleString('pt-BR')} pts`}
+                      label="Seu saldo demonstrativo"
+                      value={formatBRL(data.user?.points ?? 0)}
                       detail="Exclusivamente virtuais"
                     />
                     <Metric
@@ -1305,7 +1306,7 @@ export default function Royale() {
                   <article className="surface account-profile-wallet">
                     <div className="account-profile-wallet-icon"><Wallet size={19} /></div>
                     <span className="eyebrow">CARTEIRA VIRTUAL</span>
-                    <strong>R$ {(data.user.points / 100).toFixed(2).replace('.', ',')} <small>saldo</small></strong>
+                    <strong>{formatBRL(data.user.points)} <small>saldo</small></strong>
                     <p>Saldo para usar nas modalidades.</p>
                     <button className="primary" onClick={() => navigate('withdrawal')}>
                       Ver carteira <ArrowRight size={15} />

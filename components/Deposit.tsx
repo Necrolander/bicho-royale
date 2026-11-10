@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL } from '@/lib/money';
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from './Royale';
@@ -190,7 +191,7 @@ export default function DepositScreen({
         const code = pix.copy_paste || pix.copyPaste;
         return (
           <div className="deposit-item" key={item.id}>
-            <div className="deposit-history-heading"><span><QrCode size={15} /> Pix Efí</span><b>R$ {((pix.amount_cents || pix.amountCents || 0) / 100).toFixed(2).replace('.', ',')}</b></div>
+            <div className="deposit-history-heading"><span><QrCode size={15} /> Pix Efí</span><b>{formatBRL((pix.amount_cents || pix.amountCents || 0))}</b></div>
             <span className={`deposit-status ${pix.status.toLowerCase()}`}><i />{depositStatusLabel(pix.status)}</span>
             {pix.status === 'PENDING' && code && <>
               <div className="deposit-qr-wrap"><QRCodeSVG value={code} size={170} marginSize={2} /></div>
@@ -206,7 +207,7 @@ export default function DepositScreen({
 
         return (
           <div className="deposit-item" key={item.id}>
-            <div className="deposit-history-heading"><span>{mp.payment_method === 'credit_card' ? <CreditCard size={15} /> : mp.payment_method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(mp.payment_method)}</span><b>R$ {((mp.amount_cents || 0) / 100).toFixed(2).replace('.', ',')}</b></div>
+            <div className="deposit-history-heading"><span>{mp.payment_method === 'credit_card' ? <CreditCard size={15} /> : mp.payment_method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(mp.payment_method)}</span><b>{formatBRL((mp.amount_cents || 0))}</b></div>
             <span className={`deposit-status ${mp.status.toLowerCase()}`}><i />{depositStatusLabel(mp.status)}</span>
             {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
               {mp.qr_code_base64 && (
@@ -253,7 +254,7 @@ export default function DepositScreen({
       </div>
       <button className="deposit-balance-card" onClick={onViewAccount}>
         <span>SEU SALDO ATUAL</span>
-        <strong>R$ {(points / 100).toFixed(2).replace('.', ',')}</strong>
+        <strong>{formatBRL(points)}</strong>
         <small>saldo <ArrowRight size={13} /></small>
       </button>
     </section>

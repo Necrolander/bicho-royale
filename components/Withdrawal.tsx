@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL } from '@/lib/money';
 import { useEffect, useState } from 'react';
 import { api } from './Royale';
 
@@ -39,7 +40,7 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
       return (
         <div className="withdrawal-item" key={item.id}>
           <div className="withdrawal-header">
-            <b>R$ {(item.amount_cents / 100).toFixed(2).replace('.', ',')}</b>
+            <b>{formatBRL(item.amount_cents)}</b>
             <span style={{ color: statusColors[item.status] || 'var(--muted)' }}>{item.status}</span>
           </div>
           <div className="withdrawal-details">

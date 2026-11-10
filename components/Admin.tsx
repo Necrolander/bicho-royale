@@ -1,4 +1,30 @@
 'use client';
+import { formatBRL as brl, displayPrizeLabel } from '@/lib/money';
+
+const historyMoneyFields: Record<string, string> = {
+  points: 'valor',
+  amount: 'movimentação',
+  amount_cents: 'valor',
+  balance: 'saldo',
+  price_points: 'preço',
+  prize_points: 'prêmio',
+  pricePoints: 'preço',
+  costPoints: 'custo',
+  prizePoints: 'prêmio',
+  balanceAfter: 'saldo após movimentação',
+};
+
+function formatHistoryValue(_key: string, value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const row = value as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(row).map(([key, item]) => {
+    if (key === 'prize_label' && typeof item === 'string' && typeof row.prize_points === 'number')
+      return ['resultado', displayPrizeLabel(item, row.prize_points)];
+    if (Object.hasOwn(historyMoneyFields, key) && typeof item === 'number')
+      return [historyMoneyFields[key], brl(item)];
+    return [key, item];
+  }));
+}
 import { useEffect, useState } from 'react';
 import {
   Users,
@@ -111,8 +137,7 @@ type AdminReport = {
   }[];
   limited: boolean;
 };
-const brl = (cents: number) =>
-  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 export default function Admin({
   notify,
   refresh,
@@ -288,13 +313,13 @@ export default function Admin({
                   <span className="admin-stat-icon"><CircleDot size={19} /></span>
                   <small>ROLETINHA</small>
                   <strong>{report ? report.roulette.entries.toLocaleString('pt-BR') : '—'}</strong>
-                  <p>{report ? `${report.roulette.pointsWagered.toLocaleString('pt-BR')} R$ movimentados` : 'Carregando movimentação…'}</p>
+                  <p>{report ? `${brl(report.roulette.pointsWagered)} movimentados` : 'Carregando movimentação…'}</p>
                 </article>
                 <article className="surface admin-stat-card admin-stat-scratch">
                   <span className="admin-stat-icon"><Ticket size={19} /></span>
                   <small>RASPADINHAS</small>
                   <strong>{report ? report.scratch.cards.toLocaleString('pt-BR') : '—'}</strong>
-                  <p>{report ? `${report.scratch.pointsSpent.toLocaleString('pt-BR')} R$ usados` : 'Carregando movimentação…'}</p>
+                  <p>{report ? `${brl(report.scratch.pointsSpent)} usados` : 'Carregando movimentação…'}</p>
                 </article>
                 <article className="surface admin-stat-card admin-stat-rounds">
                   <span className="admin-stat-icon"><CalendarDays size={19} /></span>
@@ -313,7 +338,7 @@ export default function Admin({
                   </div>
                   {report ? <div className="admin-game-numbers">
                     <div><small>Participações</small><b>{report.roulette.entries.toLocaleString('pt-BR')}</b></div>
-                    <div><small>R$ usados</small><b>R$ {(report.roulette.pointsWagered / 100).toFixed(2).replace('.', ',')}</b></div>
+                    <div><small>R$ usados</small><b>{brl(report.roulette.pointsWagered)}</b></div>
                     <div><small>Resultados conferidos</small><b>{report.roulette.winningEntries.toLocaleString('pt-BR')}</b></div>
                   </div> : <p className="admin-inline-loading">O resumo será exibido assim que carregar.</p>}
                   <p className="admin-help-text">Os valores desta área são R$ demonstrativos. Abra “Vendas e movimentações” para filtrar por data e apostador.</p>
@@ -326,8 +351,8 @@ export default function Admin({
                   </div>
                   {report ? <div className="admin-game-numbers">
                     <div><small>Cartões comprados</small><b>{report.scratch.cards.toLocaleString('pt-BR')}</b></div>
-                    <div><small>Créditos usados</small><b>{report.scratch.pointsSpent.toLocaleString('pt-BR')}</b></div>
-                    <div><small>Créditos em prêmios</small><b>{report.scratch.prizePoints.toLocaleString('pt-BR')}</b></div>
+                    <div><small>Valor usado</small><b>{brl(report.scratch.pointsSpent)}</b></div>
+                    <div><small>Valor em prêmios</small><b>{brl(report.scratch.prizePoints)}</b></div>
                   </div> : <p className="admin-inline-loading">O resumo será exibido assim que carregar.</p>}
                   <p className="admin-help-text">Altere preço, prêmios, chances e disponibilidade na aba “Raspadinha”.</p>
                 </section>
@@ -341,7 +366,7 @@ export default function Admin({
                   </div>
                   {report?.events.slice(0, 6).map((event) => <div className="admin-event-row" key={`${event.category}-${event.id}`}>
                     <span className={`admin-event-dot admin-event-${event.category.toLowerCase()}`} />
-                    <div><b>{event.name}</b><small>{event.action.replaceAll('_', ' ')} · {event.category === 'PIX' ? 'Pix' : event.category === 'SCRATCH' ? 'Raspadinha' : event.category === 'ROULETTE' ? 'Roletinha' : 'Créditos'}</small></div>
+                    <div><b>{event.name}</b><small>{event.action.replaceAll('_', ' ')} · {event.category === 'PIX' ? 'Pix' : event.category === 'SCRATCH' ? 'Raspadinha' : event.category === 'ROULETTE' ? 'Roletinha' : 'Saldo'}</small></div>
                     <time>{new Date(event.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</time>
                     <button className="text-link" aria-label={`Ver evento de ${event.name}`} onClick={() => setInspect(event)}>Ver</button>
                   </div>)}
@@ -420,7 +445,7 @@ export default function Admin({
                               <option value="ADMIN">Administrador</option>
                             </select>
                           </td>
-                          <td>{u.points}</td>
+                          <td>{brl(u.points)}</td>
                           <td>
                             <span className={`badge ${u.blocked ? '' : 'green'}`}>
                               {u.blocked ? 'Bloqueado' : 'Ativo'}
@@ -890,7 +915,7 @@ export default function Admin({
             <div className="withdrawal-admin-layout">
               <section className="surface">
                 <h2>Solicitações de Saque via Pix</h2>
-                <p>Os créditos demonstrativos não podem ser pagos via Pix. Rejeite solicitações pendentes para devolver os créditos ao saldo.</p>
+                <p>O saldo demonstrativo não pode ser pago via Pix. Rejeite solicitações pendentes para devolver o valor ao saldo.</p>
               </section>
               <section className="surface">
                 <div className="scroll-table">
@@ -965,7 +990,7 @@ export default function Admin({
               <section className="surface">
                 <h2>Financeiro e atividade dos apostadores</h2>
                 <p>
-                  Esta plataforma é demonstrativa. Créditos de jogo não valem dinheiro; depósitos
+                  Esta plataforma é demonstrativa. O saldo de jogo é demonstrativo; depósitos
                   Pix aparecem separados em reais, e não há fluxo de saque configurado.
                 </p>
                 <div className="report-filters">
@@ -978,8 +1003,8 @@ export default function Admin({
               </section>
               {!report ? <p>Carregando relatório…</p> : <>
                 <div className="admin-metrics report-metrics">
-                  <section className="surface"><small>ROULETA · apostas</small><strong>{report.roulette.entries}</strong><p>R$ {(report.roulette.pointsWagered / 100).toFixed(2).replace('.', ',')} apostados</p><small>{report.roulette.winningEntries} apostas conferiram · prêmios pagos: R$ 0,00</small></section>
-                  <section className="surface"><small>RASPADINHA · jogadas</small><strong>{report.scratch.cards}</strong><p>R$ {(report.scratch.pointsSpent / 100).toFixed(2).replace('.', ',')} gastos</p><small>R$ {(report.scratch.prizePoints / 100).toFixed(2).replace('.', ',')} em prêmios · saldo líquido R$ {(report.scratch.netPoints / 100).toFixed(2).replace('.', ',')}</small></section>
+                  <section className="surface"><small>ROULETA · apostas</small><strong>{report.roulette.entries}</strong><p>{brl(report.roulette.pointsWagered)} apostados</p><small>{report.roulette.winningEntries} apostas conferiram · prêmios pagos: R$ 0,00</small></section>
+                  <section className="surface"><small>RASPADINHA · jogadas</small><strong>{report.scratch.cards}</strong><p>{brl(report.scratch.pointsSpent)} gastos</p><small>{brl(report.scratch.prizePoints)} em prêmios · saldo líquido {brl(report.scratch.netPoints)}</small></section>
                   <section className="surface"><small>PIX · depósitos confirmados</small><strong>{brl(report.pix.confirmedCents)}</strong><p>{report.pix.confirmedCount} depósitos confirmados</p><small>Pendentes: {brl(report.pix.pendingCents)} ({report.pix.pendingCount}) · outros estados: {report.pix.otherCount}</small></section>
                   <section className="surface"><small>SAQUES · não configurados</small><strong>{brl(report.withdrawals.amountCents)}</strong><p>{report.withdrawals.count} saques registrados</p><small>Não há fluxo de saque configurado nesta plataforma.</small></section>
                 </div>
@@ -993,14 +1018,14 @@ export default function Admin({
                       const summary = event.category === 'ROULETTE'
                         ? `Rodada #${String(detail.roundId || '').slice(0, 8)} · ${String(detail.mode || '')} · ${Array.isArray(detail.selection) ? detail.selection.join(', ') : ''} · R$ ${(Number(detail.points || 0) / 100).toFixed(2).replace('.', ',')}${detail.outcome && typeof detail.outcome === 'object' && 'win' in detail.outcome && detail.outcome.win ? ' · conferida' : ''}`
                         : event.category === 'SCRATCH'
-                          ? `${String(detail.gameName || 'Raspadinha')} · custo R$ ${(Number(detail.costPoints || 0) / 100).toFixed(2).replace('.', ',')} · prêmio R$ ${(Number(detail.prizePoints || 0) / 100).toFixed(2).replace('.', ',')} · ${String(detail.prize || '')}`
+                          ? `${String(detail.gameName || 'Raspadinha')} · custo R$ ${(Number(detail.costPoints || 0) / 100).toFixed(2).replace('.', ',')} · prêmio R$ ${(Number(detail.prizePoints || 0) / 100).toFixed(2).replace('.', ',')} · ${displayPrizeLabel(String(detail.prize || ''), Number(detail.prizePoints || 0))}`
                           : event.category === 'PIX'
                             ? `${brl(Number(detail.amountCents || 0))} · ${String(detail.status || '')}${detail.endToEndId ? ` · E2E ${String(detail.endToEndId)}` : ''}`
                             : `${Number(detail.points || 0) > 0 ? '+' : ''}R$ ${(Number(detail.points || 0) / 100).toFixed(2).replace('.', ',')} · saldo R$ ${(Number(detail.balanceAfter || 0) / 100).toFixed(2).replace('.', ',')}`;
                       return <tr key={`${event.category}-${event.id}`}>
                         <td>{new Date(event.created_at).toLocaleString('pt-BR')}</td>
                         <td><b>{event.name}</b><small>{event.email || 'Visitante'}</small><button className="text-link" onClick={() => void api(`admin/user-history?id=${event.user_id}`).then(setInspect).catch((e) => notify(e.message))}>Abrir histórico completo</button></td>
-                        <td><span className={`badge ${event.category === 'PIX' ? 'green' : ''}`}>{event.category === 'CREDITOS' ? 'CRÉDITOS' : event.category}</span></td>
+                        <td><span className={`badge ${event.category === 'PIX' ? 'green' : ''}`}>{event.category === 'CREDITOS' ? 'SALDO' : event.category}</span></td>
                         <td><b>{event.action}</b><small>{summary}</small><button className="text-link" onClick={() => setInspect(event)}>Ver detalhes do evento</button></td>
                       </tr>;
                     })}</tbody>
@@ -1291,12 +1316,13 @@ export default function Admin({
                         <input
                           aria-label={`Preço da raspadinha ${game.name}`}
                           type="number"
-                          min={1}
-                          max={1000}
-                          value={game.price}
+                          min={0.01}
+                          max={10}
+                          step={0.01}
+                          value={game.price / 100}
                           onChange={(e) => {
                             const games = [...(config.scratch.games ?? [])];
-                            games[gameIndex] = { ...game, price: Number(e.target.value) };
+                            games[gameIndex] = { ...game, price: Math.round(Number(e.target.value) * 100) };
                             setConfig({ ...config, scratch: { ...config.scratch, games } });
                           }}
                         />
@@ -1359,7 +1385,7 @@ export default function Admin({
                               <td>
                                 <input
                                   aria-label={`${game.name}: nome do prêmio ${index + 1}`}
-                                  value={prize.label}
+                                  value={displayPrizeLabel(prize.label, prize.points)}
                                   maxLength={40}
                                   onChange={(e) => {
                                     const games = [...(config.scratch.games ?? [])];
@@ -1375,12 +1401,13 @@ export default function Admin({
                                   aria-label={`${game.name}: R$ do prêmio ${index + 1}`}
                                   type="number"
                                   min={0}
-                                  max={10000}
-                                  value={prize.points}
+                                  max={100}
+                                  step={0.01}
+                                  value={prize.points / 100}
                                   onChange={(e) => {
                                     const games = [...(config.scratch.games ?? [])];
                                     const prizes = [...game.prizes];
-                                    prizes[index] = { ...prize, points: Number(e.target.value) };
+                                    prizes[index] = { ...prize, points: Math.round(Number(e.target.value) * 100) };
                                     games[gameIndex] = { ...game, prizes };
                                     setConfig({ ...config, scratch: { ...config.scratch, games } });
                                   }}
@@ -1475,9 +1502,9 @@ export default function Admin({
                       enabled: false,
                       prizes: [
                         { label: 'Não foi desta vez', points: 0, chance: 7000, image: '' },
-                        { label: '25 R$', points: 25, chance: 2400, image: '' },
-                        { label: '100 R$', points: 100, chance: 550, image: '' },
-                        { label: '250 R$', points: 250, chance: 50, image: '' },
+                        { label: brl(25), points: 25, chance: 2400, image: '' },
+                        { label: brl(100), points: 100, chance: 550, image: '' },
+                        { label: brl(250), points: 250, chance: 50, image: '' },
                       ],
                     });
                     setConfig({ ...config, scratch: { ...config.scratch, games } });
@@ -1609,7 +1636,7 @@ export default function Admin({
               <button className="secondary" onClick={() => setInspect(null)}>
                 Fechar inspeção
               </button>
-              <pre>{JSON.stringify(inspect, null, 2)}</pre>
+              <pre>{JSON.stringify(inspect, formatHistoryValue, 2)}</pre>
             </section>
           )}
         </>

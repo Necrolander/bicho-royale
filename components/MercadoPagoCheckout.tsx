@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL } from '@/lib/money';
 import { useEffect, useRef, useState } from 'react';
 import { api } from './Royale';
 
@@ -342,7 +343,7 @@ export default function MercadoPagoCheckout({
             <div className="mp-pix-payment">
               <div className="mp-checkout-summary">
                 <span className="mp-test-badge">SANDBOX · TESTE</span>
-                <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
+                <p className="mp-amount">{formatBRL(amountCents)}</p>
                 <span className="mp-pending-badge"><i /> Aguardando pagamento</span>
               </div>
               {qrCodeBase64 && (
@@ -382,7 +383,7 @@ export default function MercadoPagoCheckout({
 
           {paymentMethod === 'boleto' && (
             <div className="mp-boleto-payment">
-              <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
+              <p className="mp-amount">{formatBRL(amountCents)}</p>
               {ticketUrl && (
                 <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="primary mp-ticket-btn">
                   Abrir boleto
@@ -401,7 +402,7 @@ export default function MercadoPagoCheckout({
               <div className="mp-card-summary">
                 <div>
                   <span>VALOR DO DEPÓSITO</span>
-                  <strong>R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</strong>
+                  <strong>{formatBRL(amountCents)}</strong>
                 </div>
                 <span className="mp-card-secure">AMBIENTE DE TESTE</span>
               </div>

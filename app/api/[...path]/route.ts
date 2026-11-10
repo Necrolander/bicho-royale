@@ -497,7 +497,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         const current = one('SELECT points FROM users WHERE id=?', String(user.id));
         if (!current) throw new ApiError(401, 'Entre novamente na sua conta');
         if (Number(current.points) < price)
-          throw new ApiError(400, 'Créditos demonstrativos insuficientes');
+          throw new ApiError(400, 'Saldo demonstrativo insuficiente');
         const prize = pickScratchPrize(prizes, randomInt(10_000));
         const id = randomUUID(),
           createdAt = new Date().toISOString();
@@ -655,7 +655,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           ...roulette.map((row) => ({ ...row, created_at: String(row.created_at), category: 'ROULETTE', action: 'Aposta na roleta', detail: { roundId: row.round_id, mode: row.mode, selection: JSON.parse(String(row.selection)), outcome: row.outcome ? JSON.parse(String(row.outcome)) : null, points: Number(row.points) } })),
           ...scratch.map((row) => ({ ...row, created_at: String(row.created_at), category: 'SCRATCH', action: 'Raspadinha jogada', detail: { gameId: row.game_id, gameName: gameNames.get(String(row.game_id)) || (row.game_id ? 'Raspadinha removida/antiga' : 'Raspadinha sem identificação'), costPoints: Number(row.price_points), prizePoints: Number(row.prize_points), prize: row.prize_label } })),
           ...pix.map((row) => ({ ...row, created_at: String(row.created_at), category: 'PIX', action: 'Depósito Pix', detail: { amountCents: Number(row.amount_cents), status: row.status, txid: row.txid, endToEndId: row.e2e_id, confirmedAt: row.confirmed_at } })),
-          ...movements.map((row) => ({ ...row, created_at: String(row.created_at), category: 'CREDITOS', action: 'Movimentação de créditos demonstrativos', detail: { points: Number(row.amount), balanceAfter: Number(row.balance) } })),
+          ...movements.map((row) => ({ ...row, created_at: String(row.created_at), category: 'CREDITOS', action: 'Movimentação do saldo demonstrativo', detail: { points: Number(row.amount), balanceAfter: Number(row.balance) } })),
         ].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
         const events = allEvents.slice(0, 1000);
         const rouletteWins = rouletteOutcomes.reduce((count, row) => {
@@ -894,7 +894,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
               })
               .refine(
                 (x) => x.prizes.reduce((sum, prize) => sum + prize.chance, 0) === 10000,
-                'A soma das chances da raspadinha deve ser 10000 pontos-base (100%)',
+                'A soma das chances da raspadinha deve ser 100%',
               )
               .refine(
                 (x) =>

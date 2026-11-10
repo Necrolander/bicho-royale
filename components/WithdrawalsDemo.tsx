@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL } from '@/lib/money';
 
 import { ArrowDownRight, ArrowRight, CircleHelp, Clock3, Coins, Gamepad2, ShieldCheck, Wallet } from 'lucide-react';
 
@@ -23,7 +24,7 @@ export default function WithdrawalsDemo({ points, onNavigate }: Props) {
         </p>
         <div className="withdrawal-demo-balance">
           <span><Coins size={16} /> SALDO VIRTUAL</span>
-          <strong>R$ {(points / 100).toFixed(2).replace('.', ',')} <small>saldo</small></strong>
+          <strong>{formatBRL(points)} <small>saldo</small></strong>
           <span className="withdrawal-demo-no-cash"><ArrowDownRight size={14} /> Sem valor monetário</span>
         </div>
       </section>

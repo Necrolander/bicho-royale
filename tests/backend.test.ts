@@ -31,7 +31,7 @@ describe('Persistência e transações', () => {
 
     expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('cpf');
     expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('pix_key');
-    expect(() => processWithdrawalAsAdmin(user, id, 'approve')).toThrow('não podem ser pagos');
+    expect(() => processWithdrawalAsAdmin(user, id, 'approve')).toThrow('não pode ser pago');
     expect(processWithdrawalAsAdmin(user, id, 'reject')).toMatchObject({ status: 'REJECTED' });
     expect(() => processWithdrawalAsAdmin(user, id, 'reject')).toThrow('já foi processada');
     expect(one('SELECT points FROM users WHERE id=?', owner)?.points).toBe(1000);

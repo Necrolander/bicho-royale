@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL, displayPrizeLabel } from '@/lib/money';
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Coins, RotateCcw, Ticket } from 'lucide-react';
 import type { ScratchConfig, ScratchGame } from '@/lib/scratchcards';
@@ -73,7 +74,7 @@ export default function Scratchcard({
     .map((prize) => ({
       icon: selectedGame?.icon || '👑',
       image: prize.image,
-      label: prize.label,
+      label: displayPrizeLabel(prize.label, prize.points),
       points: prize.points,
     }));
   const winningSymbol = prizeSymbols.find(
@@ -232,7 +233,7 @@ export default function Scratchcard({
           </span>
         </div>
         <small>
-          Saldo: R$ {(points / 100).toFixed(2).replace('.', ',')} · sem valor monetário ou saque.
+          Saldo: {formatBRL(points)} · sem valor monetário ou saque.
         </small>
         {!config.enabled && !config.games?.some((game) => game.enabled) && (
           <p className="scratch-paused">A raspadinha está temporariamente pausada.</p>
@@ -262,7 +263,7 @@ export default function Scratchcard({
                     <p>{game.tagline}</p>
                   </div>
                   <div className="scratch-game-price">
-                    <b>R$ {(game.price / 100).toFixed(2).replace('.', ',')}</b>
+                    <b>{formatBRL(game.price)}</b>
                   </div>
                 </div>
                 <div className="scratch-game-prize">
@@ -270,7 +271,7 @@ export default function Scratchcard({
                   <b>
                     {game.prizes
                       .filter((prize) => prize.points > 0)
-                      .map((prize) => `R$ {(prize.points / 100).toFixed(2).replace('.', ',')}`)
+                      .map((prize) => `{formatBRL(prize.points)}`)
                       .join(' · ') || 'Sem prêmios configurados'}
                   </b>
                 </div>
@@ -359,7 +360,7 @@ export default function Scratchcard({
                   }}
                 >
                   <span>♟</span> {busy ? 'Preparando…' : card ? 'Comprar outro' : 'Comprar por'}
-                  <b>{selectedGame.price.toLocaleString('pt-BR')} R$</b>
+                  <b>{formatBRL(selectedGame.price)}</b>
                 </button>
                 <button
                   className="scratch-lightning"
@@ -374,20 +375,20 @@ export default function Scratchcard({
                 </button>
               </div>
               {card && !revealed && <p className="scratch-progress">Área raspada: {scratchProgress}% · raspe com o mouse ou toque</p>}
-              {card && revealed && <p className="scratch-confirm"><CheckCircle2 size={17} /> Resultado: {card.prize_label} · R$ {(card.prize_points / 100).toFixed(2).replace('.', ',')}</p>}
+              {card && revealed && <p className="scratch-confirm"><CheckCircle2 size={17} /> Resultado: {displayPrizeLabel(card.prize_label, card.prize_points)} · {formatBRL(card.prize_points)}</p>}
             </div>
             <div className="scratch-match-right">
               <div className="scratch-promo-banner" style={{ backgroundImage: `linear-gradient(90deg,#251832 0%,#251832cc 48%,#15151544 100%),url("${selectedGame.image || '/scratch-prizes/smartphone.jpg'}")` }}>
                 <b>RASPE 3 SÍMBOLOS IGUAIS</b>
                 <strong>E VEJA SEU PRÊMIO</strong>
-                <small>{selectedGame.name.toUpperCase()} · R$ {(selectedGame.price / 100).toFixed(2).replace('.', ',')}</small>
+                <small>{selectedGame.name.toUpperCase()} · {formatBRL(selectedGame.price)}</small>
               </div>
               <aside className="scratch-instructions">
                 <h2><Ticket size={20} /> {selectedGame.name}</h2>
                 <p>Pressione <kbd>Comprar</kbd> para adquirir sua raspadinha.</p>
                 <p>Raspe os <b>9 quadradinhos</b> usando o dedo ou o mouse.</p>
                 <p>Encontre <b>3 imagens iguais</b> para revelar o prêmio.</p>
-                <small>Saldo: R$ {(points / 100).toFixed(2).replace('.', ',')}</small>
+                <small>Saldo: {formatBRL(points)}</small>
               </aside>
               <div className="scratch-prize-note">
                 <b>✦ &nbsp; Prêmios demonstrativos</b>
@@ -407,12 +408,12 @@ export default function Scratchcard({
               {selectedGame.prizes.filter((prize) => prize.points > 0).map((prize, index) => (
                 <article key={`${prize.label}-${index}`}>
                 {prize.image ? (
-                  <PrizeImage src={prize.image} alt={prize.label} />
+                  <PrizeImage src={prize.image} alt={displayPrizeLabel(prize.label, prize.points)} />
                 ) : (
                   <span>{selectedGame.icon}</span>
                 )}
-                  <b>{prize.label}</b>
-                  <small>R$ {(prize.points / 100).toFixed(2).replace('.', ',')} virtuais</small>
+                  <b>{displayPrizeLabel(prize.label, prize.points)}</b>
+                  <small>{formatBRL(prize.points)} virtuais</small>
                 </article>
               ))}
             </div>
@@ -436,11 +437,11 @@ export default function Scratchcard({
                 <Ticket size={20} />
               </span>
               <div>
-                <b>{item.prize_label}</b>
+                <b>{displayPrizeLabel(item.prize_label, item.prize_points)}</b>
                 <small>{new Date(item.created_at).toLocaleString('pt-BR')}</small>
               </div>
               <span className="result-number">
-                {item.prize_points ? `+${item.prize_points}` : '—'} R$
+                {formatBRL(item.prize_points)}
               </span>
             </div>
           ))

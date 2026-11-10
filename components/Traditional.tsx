@@ -1,4 +1,5 @@
 'use client';
+import { formatBRL } from '@/lib/money';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Ticket, Sparkles, Clock, ShieldCheck, Search } from 'lucide-react';
@@ -325,19 +326,20 @@ export function ModeScreen({
         </label>
         <Positions id={id} rules={rules} value={selectedPositions} onChange={setPositions} />
         <label>
-          {multiple ? 'Pontos por animal' : 'Pontos fictícios'}
+          {multiple ? 'Valor por animal (R$)' : 'Valor (R$)'}
           <input
             type="number"
-            min={1}
-            max={100}
-            value={points}
-            onChange={(e) => setPoints(Number(e.target.value))}
+            min={0.01}
+            max={1}
+            step={0.01}
+            value={points / 100}
+            onChange={(e) => setPoints(Math.round(Number(e.target.value) * 100))}
           />
         </label>
         {multiple && (
           <p role="status">
             <b>
-              {selection.length} animal(is) × {points} R$ = {selection.length * points} R$
+              {selection.length} animal(is) × {formatBRL(points)} = {formatBRL(selection.length * points)}
               no total
             </b>
           </p>
@@ -512,8 +514,8 @@ export function Receipt({ ticket }: { ticket: TicketData }) {
             )
             .join(' / ')}
         </dd>
-        <dt>Pontos fictícios</dt>
-        <dd>{ticket.points}</dd>
+        <dt>Valor</dt>
+        <dd>{formatBRL(ticket.points)}</dd>
         <dt>Registrado em</dt>
         <dd>{date(ticket.created_at)}</dd>
         <dt>Extração / rodada</dt>
@@ -619,7 +621,7 @@ export function Tickets({ version, notify }: { version: string; notify: Notice }
                 <tr>
                   <th>Bilhete</th>
                   <th>Bicho escolhido</th>
-                  <th>Pontos</th>
+                  <th>Valor</th>
                   <th>Data</th>
                   <th>Status / resultado</th>
                 </tr>
@@ -640,7 +642,7 @@ export function Tickets({ version, notify }: { version: string; notify: Notice }
                       </button>
                     </td>
                     <td>{t.selection.map((group) => `${String(Number(group)).padStart(2, '0')} · ${animals[Number(group) - 1]?.name || 'Animal'}`).join(' / ')}</td>
-                    <td>{t.points}</td>
+                    <td>{formatBRL(t.points)}</td>
                     <td>{date(t.created_at)}</td>
                     <td>{t.outcome ? (t.outcome.win ? 'Conferiu' : 'Não conferiu') : t.status}</td>
                   </tr>
@@ -917,7 +919,7 @@ export function Dashboard({
                 {short(e.id)} · {modes.find((m) => m.id === e.mode)?.name}
               </b>
               <p>
-                {e.selection.join(' · ')} · {e.points} R$
+                {e.selection.join(' · ')} · {formatBRL(e.points)}
               </p>
               <small>
                 {date(e.created_at)} ·{' '}

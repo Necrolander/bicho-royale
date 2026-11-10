@@ -215,7 +215,7 @@ function createEntry(
     input.positions || allowedPositions(input.mode, rules),
   );
   if (!Number.isInteger(input.points) || input.points < 1 || input.points > 100)
-    throw new ApiError(400, 'Use de 1 a 100 pontos');
+    throw new ApiError(400, 'Informe um valor de R$ 0,01 a R$ 1,00');
   if (Number(user.points) < input.points)
     throw new ApiError(400, 'Pontos demonstrativos insuficientes');
   const id = randomUUID(),
