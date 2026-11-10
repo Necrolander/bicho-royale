@@ -321,11 +321,11 @@ export function settings() {
   }
   return result;
 }
-export function verifyAudit() {
+export function verifyAudit(batchSize = 5000) {
   let prev = 'GENESIS';
   let lastSeq = 0;
   while (true) {
-    const batch = all('SELECT * FROM audit_logs WHERE seq>? ORDER BY seq LIMIT 100', lastSeq);
+    const batch = all('SELECT * FROM audit_logs WHERE seq>? ORDER BY seq LIMIT ?', lastSeq, batchSize);
     if (!batch.length) return true;
     for (const x of batch) {
       if (

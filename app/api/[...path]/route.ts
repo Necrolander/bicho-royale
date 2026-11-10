@@ -529,6 +529,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     }
     if (path.startsWith('admin')) {
       const admin = await requireAdmin();
+      if (path === 'admin/audit-verify' && !post) return json({ valid: verifyAudit() });
       if (path === 'admin/reports' && !post) {
         const from = url.searchParams.get('from') || '';
         const to = url.searchParams.get('to') || '';
@@ -694,10 +695,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
             'SELECT id,name,email,role,blocked,points,created_at FROM users ORDER BY created_at DESC',
           ),
           rounds: all(
-            "SELECT r.* FROM rounds r WHERE r.type='ROULETTE' ORDER BY r.created_at DESC LIMIT 100",
+            "SELECT r.*,d.video_id,d.video_url FROM rounds r LEFT JOIN external_draws d ON d.round_id=r.id WHERE r.type='ROULETTE' ORDER BY r.created_at DESC LIMIT 100",
           ).map(publicRound),
           audit: all('SELECT * FROM audit_logs ORDER BY seq DESC LIMIT 200'),
-          auditValid: verifyAudit(),
+          auditValid: null,
           counts: {
             users: Number(one('SELECT count(*) AS n FROM users')!.n),
             registered: Number(one('SELECT count(*) AS n FROM users WHERE email IS NOT NULL')!.n),

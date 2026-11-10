@@ -56,7 +56,7 @@ type AdminData = {
     created_at: string;
     hash: string;
   }[];
-  auditValid: boolean;
+  auditValid: boolean | null;
   counts: {
     users: number;
     registered: number;
@@ -131,6 +131,7 @@ export default function Admin({
     [reportFilter, setReportFilter] = useState(''),
     [reportReload, setReportReload] = useState(0),
     [reportLoading, setReportLoading] = useState(false);
+  const [auditStatus, setAuditStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | 'error'>('idle');
   const [pixStatus, setPixStatus] = useState<{
     configured: boolean;
     environment?: string;
@@ -171,6 +172,13 @@ export default function Admin({
   useEffect(() => {
     void load();
   }, []);
+  useEffect(() => {
+    if (tab !== 'audit' || auditStatus !== 'idle') return;
+    setAuditStatus('checking');
+    void api('admin/audit-verify')
+      .then((result) => setAuditStatus(result.valid ? 'valid' : 'invalid'))
+      .catch(() => setAuditStatus('error'));
+  }, [tab, auditStatus]);
   useEffect(() => {
     if (tab !== 'reports' && tab !== 'overview' && tab !== 'withdrawals') return;
     const query = new URLSearchParams();
@@ -336,7 +344,7 @@ export default function Admin({
                 </section>
                 <aside className="surface admin-status-card">
                   <div className="admin-section-title"><span className="admin-stat-icon"><ShieldCheck size={18} /></span><div><h3>Situação do sistema</h3><p>Integridade e recebimentos</p></div></div>
-                  <div className="admin-status-line"><span className={`admin-status-dot ${data.auditValid ? 'is-ok' : 'is-error'}`} /><span>Auditoria</span><b>{data.auditValid ? 'Íntegra' : 'Revisar'}</b></div>
+                  <div className="admin-status-line"><span className={`admin-status-dot ${auditStatus === 'valid' ? 'is-ok' : auditStatus === 'invalid' ? 'is-error' : ''}`} /><span>Auditoria</span><b>{auditStatus === 'valid' ? 'Íntegra' : auditStatus === 'invalid' ? 'Revisar' : 'Sob demanda'}</b></div>
                   <div className="admin-status-line"><span className={`admin-status-dot ${pixStatus?.paymentsEnabled ? 'is-ok' : ''}`} /><span>Pix Efí</span><b>{pixStatus?.paymentsEnabled ? 'Ativo' : pixStatus?.configured ? 'Configurado · pausado' : 'Não configurado'}</b></div>
                   <div className="admin-status-line"><span className={`admin-status-dot ${mpStatus?.paymentsEnabled ? 'is-ok' : ''}`} /><span>Mercado Pago</span><b>{mpStatus?.paymentsEnabled ? 'Ativo' : mpStatus?.configured ? 'Configurado · pausado' : 'Não configurado'}</b></div>
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Depósitos confirmados</span><b>{report ? `${brl(report.pix.confirmedCents)} · ${report.pix.confirmedCount}` : '—'}</b></div>
@@ -1476,9 +1484,20 @@ export default function Admin({
               <h2>Auditoria encadeada</h2>
               <div className="info-banner">
                 <ShieldCheck size={19} />
-                {data.auditValid
-                  ? 'Todos os hashes e vínculos estão íntegros.'
-                  : 'Inconsistência detectada na cadeia.'}
+                {auditStatus === 'checking'
+                  ? 'Conferindo toda a cadeia de auditoria. Isso pode levar alguns segundos.'
+                  : auditStatus === 'valid'
+                    ? 'Todos os hashes e vínculos estão íntegros.'
+                    : auditStatus === 'invalid'
+                      ? 'Inconsistência detectada na cadeia.'
+                      : auditStatus === 'error'
+                        ? 'Não foi possível concluir a verificação.'
+                        : 'A verificação completa começa ao abrir esta aba.'}
+                {auditStatus === 'error' && (
+                  <button className="text-link" onClick={() => setAuditStatus('idle')}>
+                    Tentar novamente
+                  </button>
+                )}
               </div>
               <label className="search-field">
                 <Search size={17} />
