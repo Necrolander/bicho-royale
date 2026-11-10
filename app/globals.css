@@ -4697,6 +4697,18 @@ footer, footer small { color: #a6a6a6; }
 .mp-card-summary > div span { color: #a5aa9f; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
 .mp-card-summary strong { color: #cbff00; font-size: 26px; line-height: 1.1; }
 .mp-card-secure { padding: 7px 9px; border: 1px solid #ffffff1a; border-radius: 999px; color: #c2c7bc; font-size: 9px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; }
+.mp-card-brand-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin: -7px 0 18px; padding: 0 0 14px; border-bottom: 1px solid #ffffff12; }
+.mp-card-brand-caption { color: #81877d; font-size: 9px; font-weight: 850; letter-spacing: .12em; }
+.mp-card-brand-list { display: flex; align-items: center; gap: 6px; }
+.mp-card-brand-list > span { display: inline-flex; align-items: center; justify-content: center; height: 25px; padding: 0 7px; border: 1px solid #ffffff17; border-radius: 5px; background: #fff; }
+.mp-brand-visa { color: #163b86; font-size: 13px; font-style: italic; font-weight: 950; letter-spacing: -.08em; }
+.mp-brand-mastercard { position: relative; gap: 2px; color: #262626; font-size: 5px; font-weight: 800; letter-spacing: -.04em; }
+.mp-brand-mastercard i { width: 10px; height: 10px; border-radius: 50%; background: #eb001b; }
+.mp-brand-mastercard i + i { margin-left: -6px; background: #f79e1b; opacity: .9; }
+.mp-brand-amex { color: #fff; background: #2471bd !important; font-size: 5px; font-weight: 900; line-height: .9; text-align: center; }
+.mp-brand-elo { gap: 2px; color: #161616; font-size: 13px; font-weight: 900; font-style: italic; letter-spacing: -.08em; }
+.mp-brand-elo i { width: 7px; height: 7px; border: 2px solid #00a4df; border-right-color: #f6a623; border-bottom-color: #e53238; border-radius: 50%; }
+.mp-card-brand-note { flex: 1 1 180px; color: #81877d; font-size: 9px; text-align: right; }
 .mp-card-section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .mp-card-section-title > span { display: grid; place-items: center; width: 27px; height: 27px; flex: 0 0 27px; border-radius: 50%; color: #101010; background: #cbff00; font-size: 12px; font-weight: 900; }
 .mp-card-section-title > div { display: grid; gap: 2px; }
@@ -4716,7 +4728,7 @@ footer, footer small { color: #a6a6a6; }
 .mp-card-form-actions small { grid-column: 1 / -1; color: #81877d; font-size: 10px; line-height: 1.5; text-align: center; }
 .mp-error p, .mp-success p { color: #c4c7c0; line-height: 1.6; overflow-wrap: anywhere; }
 .mp-checkout-loading { position: fixed; inset: 0; z-index: 1200; display: grid; place-content: center; gap: 12px; color: #fff; background: #000b; text-align: center; }
-@media (max-width: 520px) { .mp-checkout-container { place-content: center; padding: 12px; }.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { padding: 17px; }.mp-card-checkout .mp-card-payment { max-height: calc(100dvh - 82px); }.mp-card-summary { margin-bottom: 16px; padding: 12px; }.mp-card-summary strong { font-size: 23px; }.mp-card-secure { font-size: 8px; }.mp-card-fields-row { gap: 8px; }.mp-card-form-actions { grid-template-columns: 1fr; }.mp-card-form-actions small { grid-column: auto; } }
+@media (max-width: 520px) { .mp-checkout-container { place-content: center; padding: 12px; }.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { padding: 17px; }.mp-card-checkout .mp-card-payment { max-height: calc(100dvh - 82px); }.mp-card-summary { margin-bottom: 16px; padding: 12px; }.mp-card-summary strong { font-size: 23px; }.mp-card-secure { font-size: 8px; }.mp-card-fields-row { gap: 8px; }.mp-card-brand-bar { gap: 7px; }.mp-card-brand-list { gap: 4px; }.mp-card-brand-list > span { padding: 0 6px; }.mp-card-brand-note { flex-basis: 100%; text-align: left; }.mp-card-form-actions { grid-template-columns: 1fr; }.mp-card-form-actions small { grid-column: auto; } }
 .account-profile-card, .account-profile-wallet { min-width: 0; padding: clamp(19px, 3vw, 28px); }
 .account-profile-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .account-profile-avatar { display: grid; place-items: center; width: 62px; height: 62px; flex: 0 0 62px; border: 1px solid #cbff0060; border-radius: 50%; color: #101010; background: #cbff00; font-size: 23px; font-weight: 900; }

@@ -405,6 +405,16 @@ export default function MercadoPagoCheckout({
                 </div>
                 <span className="mp-card-secure">AMBIENTE DE TESTE</span>
               </div>
+              <div className="mp-card-brand-bar" aria-label="Bandeiras de cartão disponíveis para teste">
+                <span className="mp-card-brand-caption">BANDEIRAS DE TESTE</span>
+                <div className="mp-card-brand-list">
+                  <span className="mp-brand-visa" aria-label="Visa">VISA</span>
+                  <span className="mp-brand-mastercard" aria-label="Mastercard"><i /><i /><b>mastercard</b></span>
+                  <span className="mp-brand-amex" aria-label="American Express">AMERICAN<br />EXPRESS</span>
+                  <span className="mp-brand-elo" aria-label="Elo"><i />elo</span>
+                </div>
+                <span className="mp-card-brand-note">A bandeira é identificada ao digitar o cartão</span>
+              </div>
               <div className="mp-card-section-title">
                 <span>1</span>
                 <div><strong>Dados do cartão</strong><small>Os dados são enviados com segurança ao Mercado Pago.</small></div>
