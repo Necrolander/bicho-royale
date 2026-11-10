@@ -50,6 +50,10 @@ export default function MercadoPagoCheckout({
   const [ticketUrl, setTicketUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | 'error'>('pending');
   const [errorMessage, setErrorMessage] = useState('');
+  const [copyMessage, setCopyMessage] = useState('');
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<CreatePaymentResponse | null>(null);
   const [cardForm, setCardForm] = useState<any>(null);
   const [showCardForm, setShowCardForm] = useState(false);
   const cardFormRef = useRef<HTMLDivElement>(null);
@@ -209,6 +213,7 @@ export default function MercadoPagoCheckout({
   };
 
   const handlePaymentResult = (result: CreatePaymentResponse) => {
+    setPaymentResult(result);
     if (result.status === 'approved') {
       setStatus('approved');
       onSuccess(result);
@@ -227,17 +232,46 @@ export default function MercadoPagoCheckout({
     }
   };
 
-  const copyPixCode = () => {
-    if (qrCode) {
-      navigator.clipboard.writeText(qrCode);
-      alert('Código PIX copiado!');
+  const copyPixCode = async () => {
+    if (!qrCode) return;
+    try {
+      await navigator.clipboard.writeText(qrCode);
+      setCopyMessage('Código Pix copiado. Cole no app do seu banco.');
+    } catch {
+      const fallback = document.createElement('textarea');
+      fallback.value = qrCode;
+      fallback.setAttribute('readonly', '');
+      fallback.style.position = 'fixed';
+      fallback.style.opacity = '0';
+      document.body.appendChild(fallback);
+      fallback.select();
+      const copied = document.execCommand('copy');
+      fallback.remove();
+      setCopyMessage(copied
+        ? 'Código Pix copiado. Cole no app do seu banco.'
+        : 'Não foi possível copiar automaticamente. Abra “Ver código Pix” e copie o texto.');
     }
   };
 
   const checkPaymentStatus = async () => {
-    // This would call the refresh endpoint
-    // For now, just close and let the parent handle refresh
-    onClose();
+    if (!paymentResult?.id) return;
+    setCheckingPayment(true);
+    setVerificationMessage('Consultando o Mercado Pago…');
+    try {
+      const result = await api('mercadopago/refresh', { id: paymentResult.id });
+      const currentStatus = String(result.status || '').toUpperCase();
+      if (currentStatus === 'CONFIRMED' || currentStatus === 'APPROVED') {
+        setStatus('approved');
+        setVerificationMessage('Pagamento confirmado.');
+        onSuccess(paymentResult);
+      } else {
+        setVerificationMessage('Ainda não identificamos o pagamento. Aguarde alguns instantes e consulte novamente.');
+      }
+    } catch (error) {
+      setVerificationMessage(error instanceof Error ? error.message : 'Não foi possível consultar agora. Tente novamente.');
+    } finally {
+      setCheckingPayment(false);
+    }
   };
 
   if (loading && status === 'pending') {
@@ -288,16 +322,26 @@ export default function MercadoPagoCheckout({
         <>
           {paymentMethod === 'pix' && (
             <div className="mp-pix-payment">
-              <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
+              <div className="mp-checkout-summary">
+                <span className="mp-test-badge">SANDBOX · TESTE</span>
+                <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
+                <span className="mp-pending-badge"><i /> Aguardando pagamento</span>
+              </div>
               {qrCodeBase64 && (
                 <div className="mp-qrcode">
                   <img src={`data:image/png;base64,${qrCodeBase64}`} alt="QR Code PIX" />
                 </div>
               )}
-              {qrCode && !qrCodeBase64 && (
-                <div className="mp-qrcode-text">
-                  <textarea readOnly value={qrCode} rows={4} />
-                  <button className="secondary" onClick={copyPixCode}>Copiar código PIX</button>
+              {qrCode && (
+                <div className="mp-copy-section">
+                  <button className="primary mp-copy-button" onClick={() => void copyPixCode()}>
+                    {copyMessage.startsWith('Código Pix copiado') ? 'Código Pix copiado ✓' : 'Copiar código Pix'}
+                  </button>
+                  <details className="mp-copy-details">
+                    <summary>Ver código Pix</summary>
+                    <textarea readOnly value={qrCode} rows={4} aria-label="Código Pix copia e cola" onFocus={(event) => event.currentTarget.select()} />
+                  </details>
+                  {copyMessage && <p className="mp-copy-feedback" role="status">{copyMessage}</p>}
                 </div>
               )}
               {ticketUrl && (
@@ -306,10 +350,15 @@ export default function MercadoPagoCheckout({
                 </a>
               )}
               <p className="mp-instruction">
-                Escaneie o QR Code ou copie o código para pagar no app do seu banco.
+                Abra o app do seu banco e escaneie o QR Code. Se estiver usando este aparelho, toque em “Copiar código Pix”.
               </p>
-              <button className="secondary" onClick={checkPaymentStatus}>Já paguei, verificar</button>
-              <button className="secondary" onClick={onClose}>Cancelar</button>
+              {verificationMessage && <p className="mp-verification-feedback" role="status">{verificationMessage}</p>}
+              <div className="mp-checkout-actions">
+                <button className="primary" disabled={checkingPayment} onClick={() => void checkPaymentStatus()}>
+                  {checkingPayment ? 'Verificando…' : 'Já paguei · verificar'}
+                </button>
+                <button className="secondary" onClick={onClose}>Fechar</button>
+              </div>
             </div>
           )}
 

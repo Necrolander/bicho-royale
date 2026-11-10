@@ -284,7 +284,7 @@ export async function createMercadoPagoPayment(
 export async function refreshMercadoPagoDeposit(userId: string, id: string) {
   const row = one('SELECT * FROM mercadopago_deposits WHERE id=? AND user_id=?', id, userId);
   if (!row) throw new ApiError(404, 'Depósito não encontrado');
-  if (row.status !== 'PENDING' && row.status !== 'CREATING') return { id, status: row.status, amountCents: row.amount_cents, qrCode: row.qr_code, qrCodeBase64: row.qr_code_base64, ticketUrl: row.ticket_url };
+  if (!['PENDING', 'CREATING', 'IN_PROCESS'].includes(String(row.status).toUpperCase())) return { id, status: row.status, amountCents: row.amount_cents, qrCode: row.qr_code, qrCodeBase64: row.qr_code_base64, ticketUrl: row.ticket_url };
 
   const config = loadConfig();
   const paymentId = row.payment_id;
@@ -302,12 +302,13 @@ export async function refreshMercadoPagoDeposit(userId: string, id: string) {
 }
 
 async function processPaymentResponse(userId: string, depositId: string, payment: Record<string, unknown>) {
-  if (payment.status === 'approved' && payment.external_reference) {
+  if (String(payment.status).toLowerCase() === 'approved' && payment.external_reference) {
     const paidCents = Math.round(Number(payment.transaction_amount) * 100);
     const row = one('SELECT * FROM mercadopago_deposits WHERE id=?', depositId);
     if (row && paidCents === Number(row.amount_cents)) {
       transaction(() => {
-        if (one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status !== 'PENDING' && one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status !== 'CREATING') return;
+        const currentStatus = String(one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status || '').toUpperCase();
+        if (!['PENDING', 'CREATING', 'IN_PROCESS'].includes(currentStatus)) return;
         run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), depositId);
         audit(userId, 'MP_DEPOSIT_CONFIRMED', { id: depositId, externalReference: String(payment.external_reference), amountCents: paidCents });
       });
@@ -338,9 +339,9 @@ export async function handleMercadoPagoWebhook(topic: string, resourceId: string
   if (topic === 'payment') {
     const response = await mpRequest(config, 'GET', `/payments/${resourceId}`);
     const payment = response as Record<string, unknown>;
-    if (payment.status === 'approved' && payment.external_reference) {
+    if (String(payment.status).toLowerCase() === 'approved' && payment.external_reference) {
       const row = one('SELECT * FROM mercadopago_deposits WHERE external_reference=?', String(payment.external_reference));
-      if (row && (row.status === 'PENDING' || row.status === 'CREATING')) {
+      if (row && ['PENDING', 'CREATING', 'IN_PROCESS'].includes(String(row.status).toUpperCase())) {
         const paidCents = Math.round(Number(payment.transaction_amount) * 100);
         if (paidCents === Number(row.amount_cents)) {
           transaction(() => {

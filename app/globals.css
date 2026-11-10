@@ -4672,10 +4672,21 @@ footer, footer small { color: #a6a6a6; }
 .mp-checkout-header h3 { margin: 0; font-size: 18px; }
 .mp-close-btn { width: 34px; height: 34px; border: 1px solid #ffffff24; border-radius: 50%; color: #fff; background: #ffffff0a; font-size: 22px; cursor: pointer; }
 .mp-amount { color: #cbff00; font-size: 24px; font-weight: 800; }
+.mp-checkout-summary { display: grid; gap: 8px; }
+.mp-checkout-summary .mp-amount { margin: 0; }
+.mp-test-badge { width: fit-content; padding: 5px 8px; border: 1px solid #cbff0040; border-radius: 999px; color: #cbff00; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.mp-pending-badge { display: inline-flex; align-items: center; gap: 7px; color: #d9c27c; font-size: 12px; }
+.mp-pending-badge i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .mp-qrcode { display: grid; place-items: center; margin: 16px auto; padding: 12px; border-radius: 12px; background: white; }
 .mp-qrcode img { display: block; width: min(240px, 65vw); height: auto; }
-.mp-qrcode-text { display: grid; gap: 10px; }
-.mp-qrcode-text textarea { width: 100%; resize: vertical; overflow-wrap: anywhere; }
+.mp-copy-section { display: grid; gap: 9px; }
+.mp-copy-button { width: 100%; min-height: 46px; font-weight: 800; }
+.mp-copy-details { display: grid; gap: 8px; color: #aeb4a9; font-size: 12px; }
+.mp-copy-details summary { width: fit-content; cursor: pointer; color: #cbff00; }
+.mp-copy-details textarea { width: 100%; resize: vertical; overflow-wrap: anywhere; }
+.mp-copy-feedback, .mp-verification-feedback { margin: 0; color: #cbff00; font-size: 12px; line-height: 1.5; }
+.mp-checkout-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.mp-checkout-actions button { min-height: 42px; }
 .mp-instruction { color: #c4c7c0; font-size: 13px; line-height: 1.6; }
 .mp-ticket-link { display: inline-flex; margin: 8px 0; color: #cbff00; }
 .mp-card-form { min-height: 220px; margin: 12px 0; }
