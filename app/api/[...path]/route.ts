@@ -247,6 +247,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         identificationType: z.string().optional(),
         identificationNumber: z.string().optional(),
       }).parse(payload);
+      // Pega CPF do usuário para PIX
+      const user = (await currentUser())!;
+      const userCpf = one('SELECT cpf FROM users WHERE id=?', String(user.id))?.cpf;
+
       return json(await createMercadoPagoPayment(
         String(user.id),
         input.amountCents,
@@ -255,7 +259,9 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         input.token,
         input.installments,
         input.issuerId,
-        input.identificationType && input.identificationNumber ? { type: input.identificationType, number: input.identificationNumber } : undefined
+        input.identificationType && input.identificationNumber
+          ? { type: input.identificationType, number: input.identificationNumber }
+          : (input.paymentMethod === 'pix' && userCpf ? { type: 'CPF', number: userCpf.replace(/\D/g, '') } : undefined)
       ), 201);
     }
     if (path === 'mercadopago/refresh' && post) {

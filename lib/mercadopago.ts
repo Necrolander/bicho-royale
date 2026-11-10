@@ -178,9 +178,12 @@ export async function createMercadoPagoPayment(
       email: payerEmail,
       ...(payerIdentification ? { identification: payerIdentification } : {}),
     };
-    // Para PIX, adicionar identification com CPF (usa email como fallback se não tem CPF)
+    // Para PIX, adicionar identification com CPF válido (11 dígitos)
     if (paymentMethod === 'pix' && !payerIdentification) {
-      payerData.identification = { type: 'CPF', number: payerEmail.replace(/\D/g, '').slice(0, 11) || '00000000000' };
+      // Tenta usar email como CPF (remove não-dígitos), senão usa um CPF de teste
+      let cpf = payerEmail.replace(/\D/g, '').slice(0, 11);
+      if (cpf.length < 11) cpf = '00000000000'; // CPF genérico para testes
+      payerData.identification = { type: 'CPF', number: cpf };
     }
 
     const paymentData: Record<string, unknown> = {

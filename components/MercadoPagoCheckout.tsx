@@ -53,6 +53,7 @@ export default function MercadoPagoCheckout({
   const [showCardForm, setShowCardForm] = useState(false);
   const cardFormRef = useRef<HTMLDivElement>(null);
   const mpInstanceRef = useRef<any>(null);
+  const paymentCreated = useRef(false);
 
   // Load Mercado Pago SDK
   useEffect(() => {
@@ -73,6 +74,15 @@ export default function MercadoPagoCheckout({
     return () => {
       document.head.removeChild(script);
     };
+  }, [paymentMethod]);
+
+  // Auto-create payment for PIX and boleto on mount
+  useEffect(() => {
+    if (!paymentCreated.current && (paymentMethod === 'pix' || paymentMethod === 'boleto')) {
+      paymentCreated.current = true;
+      if (paymentMethod === 'pix') handlePixPayment();
+      else handleBoletoPayment();
+    }
   }, [paymentMethod]);
 
   const initializeCardForm = () => {
