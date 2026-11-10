@@ -63,6 +63,11 @@ function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
 export function initialize() {
   if (!cloudEnabled() || globalPg.royaleReady) return;
   if (cloudEnabled()) {
+    // Keep account-registration columns in sync on existing Supabase projects.
+    // The SQLite schema has these columns by default, but older cloud schemas
+    // were created before profile details were added.
+    run('ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT');
+    run('ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf TEXT UNIQUE');
     // Most Vercel invocations are fresh isolates. Once the database has been
     // seeded, avoid reopening a serialized write transaction on every cold
     // start just to reinsert rows that already exist.

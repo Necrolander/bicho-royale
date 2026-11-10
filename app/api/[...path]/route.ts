@@ -247,9 +247,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         identificationType: z.string().optional(),
         identificationNumber: z.string().optional(),
       }).parse(payload);
-      // Pega CPF do usuário para PIX
-      const user = (await currentUser())!;
-      const userCpf = one('SELECT cpf FROM users WHERE id=?', String(user.id))?.cpf;
+      // Reuse the authenticated user's CPF for Pix when the payment form omits it.
+      const userCpf = String(one('SELECT cpf FROM users WHERE id=?', String(user.id))?.cpf || '');
 
       return json(await createMercadoPagoPayment(
         String(user.id),
