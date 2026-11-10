@@ -4689,17 +4689,34 @@ footer, footer small { color: #a6a6a6; }
 .mp-checkout-actions button { min-height: 42px; }
 .mp-instruction { color: #c4c7c0; font-size: 13px; line-height: 1.6; }
 .mp-ticket-link { display: inline-flex; margin: 8px 0; color: #cbff00; }
-.mp-card-form { display: grid; gap: 12px; margin: 14px 0 0; }
-.mp-card-form label { display: grid; gap: 6px; color: #c4c7c0; font-size: 12px; }
-.mp-card-form input, .mp-card-form select, .mp-card-hosted-field { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #ffffff24; border-radius: 8px; color: #fff; background: #101210; font: inherit; }
-.mp-card-hosted-field { display: flex; align-items: center; padding: 0 10px; }
-.mp-card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mp-card-checkout { place-content: center; }
+.mp-card-checkout .mp-checkout-header, .mp-card-checkout .mp-card-payment { box-sizing: border-box; width: min(100%, 560px); }
+.mp-card-checkout .mp-card-payment { max-height: calc(100dvh - 96px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #cbff0055 transparent; }
+.mp-card-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 20px; padding: 14px 16px; border: 1px solid #cbff0038; border-radius: 12px; background: linear-gradient(120deg, #cbff0010, #ffffff03); }
+.mp-card-summary > div { display: grid; gap: 4px; }
+.mp-card-summary > div span { color: #a5aa9f; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.mp-card-summary strong { color: #cbff00; font-size: 26px; line-height: 1.1; }
+.mp-card-secure { padding: 7px 9px; border: 1px solid #ffffff1a; border-radius: 999px; color: #c2c7bc; font-size: 9px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; }
+.mp-card-section-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.mp-card-section-title > span { display: grid; place-items: center; width: 27px; height: 27px; flex: 0 0 27px; border-radius: 50%; color: #101010; background: #cbff00; font-size: 12px; font-weight: 900; }
+.mp-card-section-title > div { display: grid; gap: 2px; }
+.mp-card-section-title strong { color: #fff; font-size: 14px; }
+.mp-card-section-title small { color: #939a8f; font-size: 10px; }
+.mp-card-form { display: grid; gap: 12px; margin: 0; }
+.mp-card-form label { display: grid; min-width: 0; gap: 6px; color: #b9beb4; font-size: 11px; font-weight: 650; }
+.mp-card-form input, .mp-card-form select, .mp-card-hosted-field { box-sizing: border-box; width: 100%; min-width: 0; height: 46px; min-height: 46px; padding: 0 12px; border: 1px solid #ffffff24; border-radius: 8px; color: #fff; background: #101210; font: inherit; }
+.mp-card-form input::placeholder { color: #697067; font-size: 11px; }
+.mp-card-form input:focus, .mp-card-form select:focus { border-color: #cbff00a0; outline: 2px solid #cbff0020; }
+.mp-card-hosted-field { display: flex; align-items: center; overflow: hidden; padding: 0 10px; }
+.mp-card-hosted-field iframe { display: block !important; width: 100% !important; height: 26px !important; min-height: 26px !important; border: 0 !important; }
+.mp-card-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .mp-card-form select { color-scheme: dark; }
-.mp-card-form .mp-checkout-actions { margin-top: 4px; }
-.mp-card-form .mp-checkout-actions button { flex: 1; }
+.mp-card-form-actions { display: grid; grid-template-columns: 1.4fr .8fr; gap: 9px; margin-top: 6px; }
+.mp-card-form-actions button { min-height: 46px; }
+.mp-card-form-actions small { grid-column: 1 / -1; color: #81877d; font-size: 10px; line-height: 1.5; text-align: center; }
 .mp-error p, .mp-success p { color: #c4c7c0; line-height: 1.6; overflow-wrap: anywhere; }
 .mp-checkout-loading { position: fixed; inset: 0; z-index: 1200; display: grid; place-content: center; gap: 12px; color: #fff; background: #000b; text-align: center; }
-@media (max-width: 520px) { .mp-checkout-container { place-content: center; padding: 12px; }.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { padding: 17px; } }
+@media (max-width: 520px) { .mp-checkout-container { place-content: center; padding: 12px; }.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { padding: 17px; }.mp-card-checkout .mp-card-payment { max-height: calc(100dvh - 82px); }.mp-card-summary { margin-bottom: 16px; padding: 12px; }.mp-card-summary strong { font-size: 23px; }.mp-card-secure { font-size: 8px; }.mp-card-fields-row { gap: 8px; }.mp-card-form-actions { grid-template-columns: 1fr; }.mp-card-form-actions small { grid-column: auto; } }
 .account-profile-card, .account-profile-wallet { min-width: 0; padding: clamp(19px, 3vw, 28px); }
 .account-profile-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .account-profile-avatar { display: grid; place-items: center; width: 62px; height: 62px; flex: 0 0 62px; border: 1px solid #cbff0060; border-radius: 50%; color: #101010; background: #cbff00; font-size: 23px; font-weight: 900; }

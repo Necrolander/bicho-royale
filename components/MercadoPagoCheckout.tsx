@@ -302,7 +302,7 @@ export default function MercadoPagoCheckout({
   }
 
   return (
-    <div className="mp-checkout-container">
+    <div className={`mp-checkout-container${paymentMethod === 'credit_card' ? ' mp-card-checkout' : ''}`}>
       <div className="mp-checkout-header">
         <h3>Pagar com Mercado Pago</h3>
         <button className="mp-close-btn" onClick={onClose}>×</button>
@@ -398,25 +398,38 @@ export default function MercadoPagoCheckout({
 
           {paymentMethod === 'credit_card' && (
             <div className="mp-card-payment">
-              <p className="mp-amount">R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</p>
+              <div className="mp-card-summary">
+                <div>
+                  <span>VALOR DO DEPÓSITO</span>
+                  <strong>R$ {(amountCents / 100).toFixed(2).replace('.', ',')}</strong>
+                </div>
+                <span className="mp-card-secure">AMBIENTE DE TESTE</span>
+              </div>
+              <div className="mp-card-section-title">
+                <span>1</span>
+                <div><strong>Dados do cartão</strong><small>Os dados são enviados com segurança ao Mercado Pago.</small></div>
+              </div>
               <form id="form-checkout" ref={cardFormRef} className="mp-card-form">
-                <label>Número do cartão<div id="form-checkout__cardNumber" className="mp-card-hosted-field" /></label>
-                <div className="mp-card-row">
+                <label className="mp-card-full">Número do cartão<div id="form-checkout__cardNumber" className="mp-card-hosted-field" /></label>
+                <div className="mp-card-fields-row">
                   <label>Validade<div id="form-checkout__expirationDate" className="mp-card-hosted-field" /></label>
                   <label>CVV<div id="form-checkout__securityCode" className="mp-card-hosted-field" /></label>
                 </div>
-                <label>Nome impresso no cartão<input id="form-checkout__cardholderName" autoComplete="cc-name" /></label>
-                <label>CPF
-                  <input id="form-checkout__identificationNumber" inputMode="numeric" autoComplete="off" />
-                </label>
-                <label>Tipo de documento<select id="form-checkout__identificationType" defaultValue="CPF" /></label>
-                <label>Banco emissor<select id="form-checkout__issuer" defaultValue="" /></label>
-                <label>Parcelas<select id="form-checkout__installments" defaultValue="" /></label>
-                <div className="mp-checkout-actions">
+                <div className="mp-card-fields-row">
+                  <label>Nome impresso no cartão<input id="form-checkout__cardholderName" autoComplete="cc-name" placeholder="Como aparece no cartão" /></label>
+                  <label>CPF<input id="form-checkout__identificationNumber" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" /></label>
+                </div>
+                <div className="mp-card-fields-row mp-card-selects-row">
+                  <label>Documento<select id="form-checkout__identificationType" defaultValue="CPF" /></label>
+                  <label>Banco emissor<select id="form-checkout__issuer" defaultValue="" /></label>
+                </div>
+                <label className="mp-card-full">Parcelas<select id="form-checkout__installments" defaultValue="" /></label>
+                <div className="mp-card-form-actions">
                   <button className="primary" type="submit" disabled={loading || !cardForm}>
-                    {loading ? 'Processando…' : 'Continuar para pagar'}
+                    {loading ? 'Processando pagamento…' : 'Continuar para pagar'}
                   </button>
                   <button className="secondary" type="button" onClick={onClose}>Cancelar</button>
+                  <small>Pagamento de demonstração. Nenhuma cobrança real será feita.</small>
                 </div>
               </form>
             </div>
