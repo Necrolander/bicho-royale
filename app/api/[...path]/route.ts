@@ -689,7 +689,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           .object({
             accessToken: z.string().min(20).max(500),
             publicKey: z.string().min(20).max(500),
-            webhookSecret: z.string().min(10).max(500).default(''),
+            // This field is optional in the admin form; an empty string is valid.
+            webhookSecret: z.string().max(500).default(''),
             environment: z.enum(['sandbox', 'production']),
           })
           .parse(payload);
