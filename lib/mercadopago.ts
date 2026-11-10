@@ -102,7 +102,13 @@ export function verifyMercadoPagoWebhookSignature(
   return receivedHash.length === expectedHash.length && timingSafeEqual(receivedHash, expectedHash);
 }
 
-function mpRequest(config: MercadoPagoConfig, method: string, path: string, body?: unknown): Promise<Record<string, unknown>> {
+function mpRequest(
+  config: MercadoPagoConfig,
+  method: string,
+  path: string,
+  body?: unknown,
+  idempotencyKey?: string,
+): Promise<Record<string, unknown>> {
   const host = config.environment === 'production' ? 'api.mercadopago.com' : 'api.mercadopago.com';
   const basePath = '/v1';
   return new Promise((resolve, reject) => {
@@ -116,6 +122,7 @@ function mpRequest(config: MercadoPagoConfig, method: string, path: string, body
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${config.accessToken}`,
+        ...(idempotencyKey ? { 'X-Idempotency-Key': idempotencyKey } : {}),
         ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
       },
     }, (response) => {
@@ -213,7 +220,7 @@ export async function createMercadoPagoPayment(
       paymentData.token = token;
     }
 
-    const response = await mpRequest(config, 'POST', '/payments', paymentData);
+    const response = await mpRequest(config, 'POST', '/payments', paymentData, externalReference);
     const pointOfInteraction = response.point_of_interaction as
       | { transaction_data?: { qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }; qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }
       | undefined;
