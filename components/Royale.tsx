@@ -559,7 +559,7 @@ export default function Royale() {
   return (
     <div
       className={`app ${prefs.theme === 'light' ? 'light-theme' : ''} ${prefs.accessible ? 'accessible' : ''}`}
-      style={{ '--gold': data?.settings.accent || '#D4AF37' } as React.CSSProperties}
+      style={{ '--gold': data?.settings.accent || '#CBFF00' } as React.CSSProperties}
     >
       <a className="skip-link" href="#main">
         Ir para conteúdo
