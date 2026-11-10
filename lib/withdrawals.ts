@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError } from './auth';
-import { audit, one, run, transaction } from './db';
+import { all, audit, one, run, transaction } from './db';
 
 export type Withdrawal = {
   id: string;
@@ -25,7 +25,9 @@ export type CreateWithdrawalInput = {
 };
 
 export async function createWithdrawal(input: CreateWithdrawalInput) {
-  const user = one('SELECT * FROM users WHERE id=?', input.userId);
+  const user = one('SELECT * FROM users WHERE id=?', input.userId) as
+    | { id: string; blocked: number; points: number; cpf: string | null }
+    | undefined;
   if (!user) throw new ApiError(404, 'Usuário não encontrado');
   if (user.blocked) throw new ApiError(403, 'Conta bloqueada');
   if (!user.cpf) throw new ApiError(400, 'CPF não cadastrado no perfil');
@@ -83,7 +85,7 @@ export async function listAllWithdrawals() {
 }
 
 export async function processWithdrawalAsAdmin(adminId: string, withdrawalId: string, action: 'approve' | 'reject', adminNote?: string) {
-  const withdrawal = one('SELECT * FROM withdrawals WHERE id=?', withdrawalId);
+  const withdrawal = one('SELECT * FROM withdrawals WHERE id=?', withdrawalId) as Withdrawal | undefined;
   if (!withdrawal) throw new ApiError(404, 'Saque não encontrado');
   if (withdrawal.status !== 'PENDING') throw new ApiError(409, `Saque já ${withdrawal.status.toLowerCase()}`);
 
@@ -101,7 +103,9 @@ export async function processWithdrawalAsAdmin(adminId: string, withdrawalId: st
     });
   } else {
     // Rejeitar - devolve pontos
-    const user = one('SELECT points FROM users WHERE id=?', withdrawal.user_id);
+    const user = one('SELECT points FROM users WHERE id=?', withdrawal.user_id) as
+      | { points: number }
+      | undefined;
     if (user) {
       transaction(() => {
         run(
@@ -128,9 +132,4 @@ export async function processWithdrawalAsAdmin(adminId: string, withdrawalId: st
   }
 
   return { id: withdrawalId, status: action === 'approve' ? 'APPROVED' : 'REJECTED' };
-}
-
-function all(sql: string, ...params: (string | number | null)[]) {
-  const { all: allFn } = await import('./db');
-  return allFn(sql, ...params);
 }

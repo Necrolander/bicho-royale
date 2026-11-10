@@ -30,6 +30,7 @@ export function resolvePage(path: string): Page {
   if (path === pagePaths.scratch) return 'scratch';
   if (path === pagePaths.deposit) return 'deposit';
   if (path === pagePaths.withdrawal) return 'withdrawal';
+  if (path === pagePaths.profile) return 'profile';
   return 'roulette';
 }
 export function resolveMode(path: string) {

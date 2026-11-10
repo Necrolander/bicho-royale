@@ -14,6 +14,9 @@ import {
   HelpCircle,
   Settings,
   ChevronRight,
+  ChevronDown,
+  UserRound,
+  LogOut,
   ArrowUpRight,
   Bell,
   Search,
@@ -193,6 +196,8 @@ export default function Royale() {
           ? 'Depósitos'
         : page === 'withdrawal'
           ? 'Saques'
+        : page === 'profile'
+          ? 'Minha conta'
           : 'Roleta Vegas';
   const [data, setData] = useState<Bootstrap | null>(null),
     [prefs, setPrefs] = useState<Preferences>(defaults),
@@ -203,6 +208,7 @@ export default function Royale() {
     [selectedAnimals, setSelectedAnimals] = useState<number[]>([]),
     [search, setSearch] = useState(''),
     [modal, setModal] = useState<'auth' | 'notifications' | 'tutorial' | null>(null),
+    [accountMenuOpen, setAccountMenuOpen] = useState(false),
     [menu, setMenu] = useState(false),
     [now, setNow] = useState(() => Date.now()),
     [tutorialStep, setTutorialStep] = useState(0),
@@ -215,6 +221,7 @@ export default function Royale() {
     [passwordVisible, setPasswordVisible] = useState(false);
   const initialized = useRef(false),
     previousRounds = useRef(new Set<string>());
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const t = translations[prefs.locale];
   const activePage: Page =
     page === 'home'
@@ -227,6 +234,8 @@ export default function Royale() {
           ? 'deposit'
         : page === 'withdrawal'
           ? 'withdrawal'
+        : page === 'profile'
+          ? 'profile'
           : 'roulette';
   const recentPrizeItems = (() => {
     const items: {
@@ -360,7 +369,24 @@ export default function Royale() {
   const navigate = (p: Page) => {
     router.push(pagePaths[p]);
     setMenu(false);
+    setAccountMenuOpen(false);
   };
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !accountMenuRef.current?.contains(event.target))
+        setAccountMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAccountMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [accountMenuOpen]);
   useEffect(() => {
     if (!modal) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -407,6 +433,14 @@ export default function Royale() {
     } finally {
       setBusy(false);
     }
+  };
+  const signOut = () => {
+    setAccountMenuOpen(false);
+    void act(async () => {
+      await api('auth/logout', {});
+      router.replace(pagePaths.home);
+      notify('Sessão encerrada.');
+    });
   };
   const savePrefs = async (next: Preferences) => {
     const prior = prefs;
@@ -685,11 +719,49 @@ export default function Royale() {
             <button className={`header-money-action ${activePage === 'withdrawal' ? 'active' : ''}`} onClick={() => navigate('withdrawal')}>
               <Wallet size={14} /> Sacar
             </button>
-            <button className="header-account" onClick={() => navigate('profile')} aria-label="Minha conta">
-              <span className="avatar top-avatar">{data?.user?.name.slice(0, 1) || 'R'}</span>
-              <b>{data?.user?.name || 'Minha conta'}</b>
-              <ChevronRight size={14} />
-            </button>
+            <div className="account-menu-wrap" ref={accountMenuRef}>
+              <button
+                className="header-account"
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                aria-label="Abrir menu da conta"
+                aria-haspopup="true"
+                aria-controls="account-dropdown"
+                aria-expanded={accountMenuOpen}
+              >
+                <span className="avatar top-avatar">{data?.user?.name.slice(0, 1) || 'R'}</span>
+                <b>{data?.user?.name || 'Minha conta'}</b>
+                <ChevronDown size={14} />
+              </button>
+              {accountMenuOpen && (
+                <div className="account-dropdown" id="account-dropdown" aria-label="Menu da conta">
+                  <div className="account-dropdown-heading">
+                    <span className="avatar account-dropdown-avatar">{data?.user?.name.slice(0, 1) || 'R'}</span>
+                    <span><b>{data?.user?.name || 'Minha conta'}</b><small>{data?.user?.email || 'Conta demonstrativa'}</small></span>
+                  </div>
+                  <button onClick={() => navigate('profile')}>
+                    <UserRound size={16} /> Minha conta <ChevronRight size={14} />
+                  </button>
+                  <button onClick={() => navigate('withdrawal')}>
+                    <Wallet size={16} /> Minha carteira <ChevronRight size={14} />
+                  </button>
+                  {data?.user?.role === 'ADMIN' && (
+                    <button onClick={() => navigate('admin')}>
+                      <ShieldCheck size={16} /> Administração <ChevronRight size={14} />
+                    </button>
+                  )}
+                  <div className="account-dropdown-divider" />
+                  {data?.user?.guest ? (
+                    <button className="account-dropdown-signout" onClick={() => { setAccountMenuOpen(false); setAuthMode('login'); setModal('auth'); }}>
+                      <UserRound size={16} /> Entrar ou cadastrar <ArrowRight size={14} />
+                    </button>
+                  ) : (
+                    <button className="account-dropdown-signout" onClick={signOut}>
+                      <LogOut size={16} /> Sair da conta <LogOut size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
         {recentPrizeItems.length > 0 && activePage !== 'admin' && (
@@ -737,6 +809,8 @@ export default function Royale() {
                     ? 'RASPE E DESCUBRA'
                     : page === 'withdrawal'
                       ? 'SAQUES · MODO DEMONSTRAÇÃO'
+                    : page === 'profile'
+                      ? 'SUA CONTA'
                     : t.tagline.toUpperCase()}
               </p>
               <h1>
@@ -757,6 +831,8 @@ export default function Royale() {
                       ? 'Acompanhe depósitos e veja as opções disponíveis para sua conta.'
                       : page === 'withdrawal'
                         ? 'Consulte a disponibilidade e o prazo demonstrativo para solicitações de saque.'
+                      : page === 'profile'
+                        ? 'Confira os dados da sua conta e acesse sua carteira virtual.'
                       : 'Uma experiência demonstrativa com regras claras e resultados verificáveis.'}
               </p>
             </div>
@@ -1165,6 +1241,43 @@ export default function Royale() {
               {page === 'deposit' && (
                 <DepositScreen pixEnabled={data.paymentsEnabled} mpEnabled={data.mercadoPagoEnabled} registered={!!data.user?.email} />
               )}
+              {page === 'profile' && data.user && (
+                <section className="account-profile-page">
+                  <article className="surface account-profile-card">
+                    <div className="account-profile-identity">
+                      <span className="account-profile-avatar">{data.user.name.slice(0, 1).toUpperCase() || 'R'}</span>
+                      <div>
+                        <span className="eyebrow">PERFIL DA CONTA</span>
+                        <h2>{data.user.name}</h2>
+                        <p>{data.user.email || 'Sessão demonstrativa sem e-mail cadastrado'}</p>
+                      </div>
+                      <span className={`account-role ${data.user.role === 'ADMIN' ? 'admin' : ''}`}>
+                        {data.user.guest ? 'DEMONSTRAÇÃO' : data.user.role === 'ADMIN' ? 'ADMINISTRADOR' : 'MEMBRO'}
+                      </span>
+                    </div>
+                    <div className="account-profile-actions">
+                      {data.user.guest ? (
+                        <button className="primary" onClick={() => { setAuthMode('login'); setModal('auth'); }}>
+                          Entrar ou criar conta <ArrowRight size={15} />
+                        </button>
+                      ) : (
+                        <button className="secondary" onClick={signOut}>
+                          <LogOut size={15} /> Sair da conta
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                  <article className="surface account-profile-wallet">
+                    <div className="account-profile-wallet-icon"><Wallet size={19} /></div>
+                    <span className="eyebrow">CARTEIRA VIRTUAL</span>
+                    <strong>{data.user.points.toLocaleString('pt-BR')} <small>créditos</small></strong>
+                    <p>Saldo demonstrativo para usar nas modalidades. Não tem conversão em dinheiro.</p>
+                    <button className="primary" onClick={() => navigate('withdrawal')}>
+                      Ver carteira <ArrowRight size={15} />
+                    </button>
+                  </article>
+                </section>
+              )}
               {page === 'withdrawal' && (
                 <WithdrawalScreen points={data.user?.points || 0} registered={!!data.user?.email} />
               )}
@@ -1321,8 +1434,9 @@ export default function Royale() {
                           autoComplete="off"
                           placeholder="000.000.000-00"
                           onInput={(e) => {
-                            const v = e.target.value.replace(/\D/g, '').slice(0, 11);
-                            e.target.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                            const target = e.currentTarget;
+                            const v = target.value.replace(/\D/g, '').slice(0, 11);
+                            target.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
                           }}
                         />
                       </label>
