@@ -4666,6 +4666,22 @@ footer, footer small { color: #a6a6a6; }
 .account-profile-settings form { display: flex; align-items: flex-end; gap: 12px; max-width: 650px; }
 .account-profile-settings form .field { flex: 1; margin: 0; }
 @media (max-width: 520px) { .account-profile-settings form { align-items: stretch; flex-direction: column; } }
+.mp-checkout-container { position: fixed; inset: 0; z-index: 1200; display: grid; place-content: center; gap: 14px; overflow: auto; padding: 20px; color: #fff; background: #000b; backdrop-filter: blur(7px); }
+.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { width: min(100%, 480px); padding: 22px; border: 1px solid #cbff0040; border-radius: 16px; background: #171917; box-shadow: 0 24px 80px #0009; }
+.mp-checkout-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; }
+.mp-checkout-header h3 { margin: 0; font-size: 18px; }
+.mp-close-btn { width: 34px; height: 34px; border: 1px solid #ffffff24; border-radius: 50%; color: #fff; background: #ffffff0a; font-size: 22px; cursor: pointer; }
+.mp-amount { color: #cbff00; font-size: 24px; font-weight: 800; }
+.mp-qrcode { display: grid; place-items: center; margin: 16px auto; padding: 12px; border-radius: 12px; background: white; }
+.mp-qrcode img { display: block; width: min(240px, 65vw); height: auto; }
+.mp-qrcode-text { display: grid; gap: 10px; }
+.mp-qrcode-text textarea { width: 100%; resize: vertical; overflow-wrap: anywhere; }
+.mp-instruction { color: #c4c7c0; font-size: 13px; line-height: 1.6; }
+.mp-ticket-link { display: inline-flex; margin: 8px 0; color: #cbff00; }
+.mp-card-form { min-height: 220px; margin: 12px 0; }
+.mp-error p, .mp-success p { color: #c4c7c0; line-height: 1.6; overflow-wrap: anywhere; }
+.mp-checkout-loading { position: fixed; inset: 0; z-index: 1200; display: grid; place-content: center; gap: 12px; color: #fff; background: #000b; text-align: center; }
+@media (max-width: 520px) { .mp-checkout-container { place-content: center; padding: 12px; }.mp-checkout-header, .mp-pix-payment, .mp-boleto-payment, .mp-card-payment, .mp-error, .mp-success { padding: 17px; } }
 .account-profile-card, .account-profile-wallet { min-width: 0; padding: clamp(19px, 3vw, 28px); }
 .account-profile-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .account-profile-avatar { display: grid; place-items: center; width: 62px; height: 62px; flex: 0 0 62px; border: 1px solid #cbff0060; border-radius: 50%; color: #101010; background: #cbff00; font-size: 23px; font-weight: 900; }

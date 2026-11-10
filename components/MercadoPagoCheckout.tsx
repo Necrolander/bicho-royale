@@ -49,30 +49,48 @@ export default function MercadoPagoCheckout({
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
   const [ticketUrl, setTicketUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | 'error'>('pending');
+  const [errorMessage, setErrorMessage] = useState('');
   const [cardForm, setCardForm] = useState<any>(null);
   const [showCardForm, setShowCardForm] = useState(false);
   const cardFormRef = useRef<HTMLDivElement>(null);
   const mpInstanceRef = useRef<any>(null);
   const paymentCreated = useRef(false);
 
-  // Load Mercado Pago SDK
+  // Load the card SDK only with the public key returned for a sandbox config.
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://sdk.mercadopago.com/js/v2';
-    script.async = true;
-    script.onload = () => {
-      if ((window as any).MercadoPago) {
-        mpInstanceRef.current = new (window as any).MercadoPago(
-          process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || ''
-        );
-        if (paymentMethod === 'credit_card') {
-          initializeCardForm();
+    if (paymentMethod !== 'credit_card') return;
+    let cancelled = false;
+    let script: HTMLScriptElement | undefined;
+    const initialize = async () => {
+      try {
+        const { publicKey } = await api('mercadopago/public-key');
+        if (!publicKey) throw new Error('A chave pública de testes do Mercado Pago não está configurada.');
+        if (!window.MercadoPago) {
+          script = document.createElement('script');
+          script.src = 'https://sdk.mercadopago.com/js/v2';
+          script.async = true;
+          await new Promise<void>((resolve, reject) => {
+            script!.onload = () => resolve();
+            script!.onerror = () => reject(new Error('Não foi possível carregar o SDK do Mercado Pago.'));
+            document.head.appendChild(script!);
+          });
         }
+        if (cancelled) return;
+        if (!window.MercadoPago) throw new Error('O SDK do Mercado Pago não inicializou.');
+        mpInstanceRef.current = new window.MercadoPago(publicKey);
+        initializeCardForm();
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : 'Não foi possível abrir o formulário de cartão.';
+        setErrorMessage(message);
+        setStatus('error');
+        onError(message);
       }
     };
-    document.head.appendChild(script);
+    void initialize();
     return () => {
-      document.head.removeChild(script);
+      cancelled = true;
+      script?.remove();
     };
   }, [paymentMethod]);
 
@@ -104,7 +122,12 @@ export default function MercadoPagoCheckout({
         },
         callbacks: {
           onSubmit: (data: any) => handleCardSubmit(data),
-          onError: (error: any) => console.error('Card form error:', error),
+          onError: (error: any) => {
+            const message = error?.message || 'Não foi possível carregar os campos do cartão.';
+            setErrorMessage(message);
+            setStatus('error');
+            onError(message);
+          },
         },
         style: {
           base: {
@@ -135,7 +158,10 @@ export default function MercadoPagoCheckout({
       });
       handlePaymentResult(result);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Erro ao processar cartão');
+      const message = error instanceof Error ? error.message : 'Erro ao processar cartão';
+      setErrorMessage(message);
+      setStatus('error');
+      onError(message);
     } finally {
       setLoading(false);
     }
@@ -155,7 +181,10 @@ export default function MercadoPagoCheckout({
       });
       handlePaymentResult(result);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Erro ao gerar PIX');
+      const message = error instanceof Error ? error.message : 'Erro ao gerar PIX';
+      setErrorMessage(message);
+      setStatus('error');
+      onError(message);
     } finally {
       setLoading(false);
     }
@@ -170,7 +199,10 @@ export default function MercadoPagoCheckout({
       });
       handlePaymentResult(result);
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Erro ao gerar boleto');
+      const message = error instanceof Error ? error.message : 'Erro ao gerar boleto';
+      setErrorMessage(message);
+      setStatus('error');
+      onError(message);
     } finally {
       setLoading(false);
     }
@@ -185,6 +217,10 @@ export default function MercadoPagoCheckout({
       if (result.qrCode) setQrCode(result.qrCode);
       if (result.qrCodeBase64) setQrCodeBase64(result.qrCodeBase64);
       if (result.ticketUrl) setTicketUrl(result.ticketUrl);
+      if (paymentMethod === 'pix' && !result.qrCode && !result.qrCodeBase64) {
+        setStatus('error');
+        setErrorMessage('O Mercado Pago não retornou o QR Code. Nenhum pagamento foi iniciado nesta tela.');
+      }
     } else {
       setStatus('rejected');
       onError(`Pagamento ${result.statusDetail || result.status}`);
@@ -236,6 +272,15 @@ export default function MercadoPagoCheckout({
           <p>Tente novamente ou escolha outro método.</p>
           <button className="secondary" onClick={() => setStatus('pending')}>Tentar novamente</button>
           <button className="secondary" onClick={onClose}>Cancelar</button>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="mp-error" role="alert">
+          <div className="error-icon">!</div>
+          <h4>Checkout indisponível</h4>
+          <p>{errorMessage || 'Não foi possível preparar o pagamento.'}</p>
+          <button className="secondary" onClick={onClose}>Fechar</button>
         </div>
       )}
 

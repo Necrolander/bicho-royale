@@ -51,8 +51,9 @@ export function saveMercadoPagoConfig(config: MercadoPagoConfig, actor: string) 
 
 export function mercadoPagoStatus() {
   const row = one('SELECT environment,updated_at FROM mercadopago_configs WHERE id=1');
+  const sandboxOnly = row?.environment === 'sandbox';
   return row ? { configured: true, environment: row.environment, updatedAt: row.updated_at,
-    paymentsEnabled: process.env.MERCADOPAGO_PAYMENTS_ENABLED === 'true' } : { configured: false, paymentsEnabled: false };
+    paymentsEnabled: process.env.MERCADOPAGO_PAYMENTS_ENABLED === 'true' && sandboxOnly } : { configured: false, paymentsEnabled: false };
 }
 
 function loadConfig(): MercadoPagoConfig {
@@ -62,6 +63,13 @@ function loadConfig(): MercadoPagoConfig {
   const decipher = createDecipheriv('aes-256-gcm', mpKey(), iv);
   decipher.setAuthTag(tag);
   return JSON.parse(Buffer.concat([decipher.update(payload), decipher.final()]).toString('utf8')) as MercadoPagoConfig;
+}
+
+export function mercadoPagoCheckoutPublicKey() {
+  const config = loadConfig();
+  if (config.environment !== 'sandbox')
+    throw new ApiError(503, 'Checkout disponível somente em ambiente de testes');
+  return { publicKey: config.publicKey };
 }
 
 export function verifyMercadoPagoWebhookSignature(
@@ -138,9 +146,11 @@ export async function testMercadoPagoConnection() {
   return { ok: true, environment: config.environment };
 }
 
-function requirePayments() {
+function requirePayments(config: MercadoPagoConfig) {
   if (process.env.MERCADOPAGO_PAYMENTS_ENABLED !== 'true')
     throw new ApiError(503, 'Depósitos Mercado Pago ainda não estão habilitados');
+  if (config.environment !== 'sandbox')
+    throw new ApiError(503, 'Pagamentos reais estão desativados; configure credenciais de sandbox para testar');
 }
 
 function mapPaymentMethod(method: 'pix' | 'credit_card' | 'boleto'): string {
@@ -162,8 +172,8 @@ export async function createMercadoPagoPayment(
   issuerId?: string,
   payerIdentification?: { type: string; number: string }
 ): Promise<CreatePaymentResult> {
-  requirePayments();
   const config = loadConfig();
+  requirePayments(config);
   const id = randomUUID();
   const externalReference = randomUUID();
   const mpPaymentMethod = mapPaymentMethod(paymentMethod);

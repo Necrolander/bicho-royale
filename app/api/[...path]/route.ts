@@ -37,6 +37,7 @@ import {
 } from '@/lib/efi';
 import {
   createMercadoPagoPayment,
+  mercadoPagoCheckoutPublicKey,
   mercadoPagoStatus,
   refreshMercadoPagoDeposit,
   refreshMercadoPagoDepositAsAdmin,
@@ -240,6 +241,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         ),
       );
     }
+    if (path === 'mercadopago/public-key' && !post) {
+      requireRegistration((await currentUser())!);
+      return json(mercadoPagoCheckoutPublicKey());
+    }
     if (path === 'mercadopago/deposits' && post) {
       const user = (await currentUser())!;
       const email = String(user.email);
@@ -298,7 +303,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       return json({
         user: user ? publicUser(user) : null,
         paymentsEnabled: process.env.EFI_PAYMENTS_ENABLED === 'true' && efiStatus().configured,
-        mercadoPagoEnabled: process.env.MERCADOPAGO_PAYMENTS_ENABLED === 'true' && mercadoPagoStatus().configured,
+        mercadoPagoEnabled: mercadoPagoStatus().paymentsEnabled,
         animals,
         modes,
         settings: platformSettings,
