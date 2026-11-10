@@ -4204,6 +4204,40 @@ footer, footer small { color: #a6a6a6; }
   .mobile-bottom button.active { color: #cbff00; }
   .mobile-bottom button.active:before { background: #cbff00; }
 }
+.arena {
+  border-color: #343434;
+  background: radial-gradient(ellipse at 50% 52%, #cbff0008, transparent 65%), #151515;
+}
+.arena:before { background: repeating-linear-gradient(90deg, transparent, transparent 78px, #ffffff04 79px), repeating-linear-gradient(0deg, transparent, transparent 78px, #ffffff04 79px); }
+.wheel-aura { background: radial-gradient(ellipse, #cbff0015, #ffffff05 45%, transparent 69%); }
+.wheel-shadow { background: #30330e; box-shadow: 0 15px 0 #1b1c0a, 0 23px 32px #000a, 0 0 45px #cbff0012; }
+.wheel-hub {
+  color: #fff;
+  border-color: #cbff00;
+  background: radial-gradient(circle at 50% 20%, #242424, #101010 70%);
+  box-shadow: 0 0 0 4px #171717, 0 0 0 5px #cbff00, 0 9px 17px #0009, inset 0 2px 15px #ffffff12;
+}
+.wheel-hub .hub-crown { color: #cbff00; }
+.wheel-hub i { color: #b7b7b7; }
+.wheel-pointer { background: linear-gradient(90deg, #9fc600, #e4ff87 45%, #cbff00); }
+.round-panel { border-color: #303030; background: linear-gradient(145deg, #1b1b1b, #141414); }
+.round-panel h2 em { color: #cbff00; }
+.countdown { border-color: #3a3a3a; background: #151515; }
+.countdown b { color: #cbff00; }
+.selected-animal { border-color: #343434; background: #202020; }
+.round-panel .primary {
+  color: #101010;
+  border: 1px solid #cbff00;
+  background: #cbff00;
+  box-shadow: 0 7px 22px #cbff0020;
+}
+.round-panel .primary:hover { background: #dcff4d; }
+.round-panel .secondary { color: #ededed; border-color: #3b3b3b; background: #242424; }
+.wheel-reveal { border-color: #cbff00; background: #181818f5; }
+.wheel-reveal small, .arena-footer svg { color: #cbff00; }
+.admin-stat-icon { color: #cbff00; border-color: #cbff0050; background: #cbff0010; }
+.admin-stat-roulette > .admin-stat-icon, .admin-stat-scratch > .admin-stat-icon,
+.admin-stat-rounds > .admin-stat-icon { color: #cbff00; background: #cbff0010; }
 .brand-icon img {
   width: 30px;
   height: 30px;

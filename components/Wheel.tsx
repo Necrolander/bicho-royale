@@ -43,12 +43,12 @@ export function Wheel({
       ctx.arc(0, 0, radius, start, start + step);
       ctx.closePath();
       const g = ctx.createRadialGradient(0, 0, 70, 0, 0, radius);
-      g.addColorStop(0, '#1d2c2b');
-      g.addColorStop(0.65, i % 2 ? '#142c2a' : '#23332d');
-      g.addColorStop(1, i % 2 ? '#23443b' : '#344c3e');
+      g.addColorStop(0, '#151515');
+      g.addColorStop(0.65, i % 2 ? '#171717' : '#242424');
+      g.addColorStop(1, i % 2 ? '#202020' : '#2b2b2b');
       ctx.fillStyle = g;
       ctx.fill();
-      ctx.strokeStyle = '#b9994b';
+      ctx.strokeStyle = '#cbff00';
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.save();
@@ -56,7 +56,7 @@ export function Wheel({
       ctx.translate(239, 0);
       ctx.rotate(Math.PI / 2);
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#e4c779';
+      ctx.fillStyle = '#ffffff';
       ctx.font = '600 16px sans-serif';
       ctx.fillText(String(i + 1).padStart(2, '0'), 0, -13);
       ctx.font = '27px "Segoe UI Emoji"';
@@ -64,11 +64,11 @@ export function Wheel({
       ctx.restore();
     }
     for (const [r, w, col] of [
-      [302, 17, '#b18b3c'],
-      [307, 3, '#f5d77a'],
-      [294, 3, '#ffe5a2'],
-      [283, 2, '#d5b76c'],
-      [160, 1, '#a78b48'],
+      [302, 17, '#252525'],
+      [307, 3, '#cbff00'],
+      [294, 3, '#ffffff'],
+      [283, 2, '#cbff00'],
+      [160, 1, '#656565'],
     ] as [number, number, string][]) {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -80,7 +80,7 @@ export function Wheel({
       const a = (i * Math.PI * 2) / 50;
       ctx.beginPath();
       ctx.arc(Math.cos(a) * 303, Math.sin(a) * 303, 2, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffeab0';
+      ctx.fillStyle = '#cbff00';
       ctx.fill();
     }
   }, []);
