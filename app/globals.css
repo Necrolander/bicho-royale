@@ -4057,187 +4057,7 @@ footer button {
   }
 }
 
-/* Bichos Vegas · nova identidade visual preto, branco e lime. */
-:root {
-  color-scheme: dark;
-  --bg: #101010;
-  --panel: #171717;
-  --panel2: #1c1c1c;
-  --surface: #181818;
-  --line: #303030;
-  --text: #ffffff;
-  --muted: #b7b7b7;
-  --gold: #cbff00;
-  --pale: #cbff00;
-  --green: #cbff00;
-}
-html { background: #101010; }
-body, .app, .app-body, #main { background-color: #101010; color: #fff; }
-body { background-image: radial-gradient(ellipse at 50% -35%, #cbff0010, transparent 62%); }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
-textarea:focus-visible, summary:focus-visible { outline-color: #cbff00; }
-::selection { color: #101010; background: #cbff00; }
 
-.sidebar {
-  background: #141414;
-  border-right: 1px solid #2d2d2d;
-  box-shadow: 12px 0 36px #0002;
-}
-.brand-lockup { filter: drop-shadow(0 6px 18px #cbff0026); }
-.topbar {
-  background: #101010f2;
-  border-bottom-color: #2d2d2d;
-  backdrop-filter: blur(18px);
-}
-.header-nav > button, .header-nav > button svg { color: #e8e8e8; }
-.header-nav > button:hover, .header-nav > button.active { color: #cbff00; }
-.header-nav > button.active svg { color: #cbff00; }
-.nav-item { color: #c4c4c4; }
-.nav-item:hover { color: #fff; background: #ffffff0b; }
-.nav-item.active {
-  color: #cbff00;
-  background: linear-gradient(100deg, #cbff001c, #cbff0008);
-  border-color: #cbff0055;
-  box-shadow: inset 3px 0 #cbff00;
-}
-.nav-item.active svg, .sidebar > nav:first-of-type .nav-item:first-child { color: #cbff00; }
-.sidebar > nav:first-of-type .nav-item:first-child { border-color: #cbff0055; }
-
-.page-title { margin-bottom: 24px; }
-.page-title h1, .page-title h2, h1, h2, h3 { color: #fff; }
-.page-title p, .subtle, .surface p, .surface small { color: #b7b7b7; }
-.eyebrow, .admin-eyebrow, .page-title .eyebrow { color: #cbff00; }
-.surface {
-  border: 1px solid #303030;
-  border-radius: 16px;
-  background: linear-gradient(145deg, #1b1b1b, #151515);
-  box-shadow: 0 10px 30px #0000001f;
-}
-.surface:hover { border-color: #414141; }
-.round-panel, .metric, .admin-banner, .admin-game-summary, .admin-activity-card,
-.admin-status-card, .admin-stat-card, .simple-home-hero, .scratch-hero {
-  border-color: #303030;
-  background: linear-gradient(145deg, #1c1c1c, #151515);
-}
-.round-panel { box-shadow: 0 18px 44px #0004; }
-.metric { color: #fff; }
-.metric b, .admin-metrics strong, .admin-stat-card > strong,
-.admin-game-numbers b, .admin-overview-heading h2 { color: #cbff00; }
-.admin-banner { color: #cbff00; }
-.admin-banner b span { color: #cbff00; background: #cbff0017; }
-.admin-tabs button, .secondary, .icon-button {
-  color: #e7e7e7;
-  border-color: #373737;
-  background: #202020;
-  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
-}
-.admin-tabs button:hover, .secondary:hover, .icon-button:hover {
-  color: #fff;
-  border-color: #cbff0080;
-  background: #272a1b;
-}
-.admin-tabs button.active, .mode-tabs button.active {
-  color: #101010;
-  border-color: #cbff00;
-  background: #cbff00;
-  box-shadow: 0 5px 18px #cbff0024;
-}
-.primary, .header-money-action, .simple-home-cta, .scratch-buy-button {
-  color: #101010;
-  border: 1px solid #cbff00;
-  background: #cbff00;
-  box-shadow: 0 7px 22px #cbff0020;
-  font-weight: 850;
-}
-.primary:hover, .header-money-action:hover, .simple-home-cta:hover, .scratch-buy-button:hover {
-  color: #101010;
-  border-color: #dbff4b;
-  background: #dbff4b;
-  box-shadow: 0 9px 28px #cbff0033;
-  transform: translateY(-1px);
-}
-.balance, .balance b, .gold-text, em, .text-link, .admin-section-title .text-link,
-.admin-help-text a, .simple-home-options strong { color: #cbff00; }
-.topbar .balance { color: #fff; background: #202020; border: 1px solid #343434; }
-input, select, textarea, .field input, .field select, .field textarea {
-  color: #fff;
-  border-color: #3a3a3a;
-  background: #202020;
-}
-input::placeholder, textarea::placeholder { color: #858585; }
-table th { color: #cbff00; }
-table td, .recent-row, .admin-event-row { border-color: #303030; }
-.admin-status-dot.is-ok, .live-dot, .admin-event-roulette { background: #cbff00; box-shadow: 0 0 10px #cbff0050; }
-.roulette-results, .prose, .admin-layout .surface { border-color: #303030; }
-.simple-type-picker button, .simple-animal-grid button, .simple-number-tabs button,
-.group-picker button, .tens-picker button { color: #e8e8e8; border-color: #383838; background: #1c1c1c; }
-.simple-type-picker button.selected, .simple-number-tabs button.selected,
-.simple-animal-grid button.selected, .group-picker button.selected, .tens-picker button.selected {
-  color: #cbff00;
-  border-color: #cbff00;
-  background: #cbff0014;
-  box-shadow: inset 0 0 0 1px #cbff0040;
-}
-.simple-type-picker svg, .simple-animal-grid .selected svg, .simple-summary-line strong { color: #cbff00; }
-.scratch-match-actions .scratch-auto, .scratch-match-actions .scratch-lightning { background: #292929; color: #fff; }
-.scratch-prize-note > b, .scratch-prize.revealed { color: #cbff00; }
-.prize-ticker { border-color: #303030; background: #171717; }
-.prize-ticker-title small, .prize-ticker-card em { color: #cbff00; }
-.prize-ticker-card { border-color: #303030; background: #1b1b1b; }
-.prize-ticker-card small { color: #cbff00; }
-.auth-gate { background: radial-gradient(ellipse at 50% 0%, #cbff0012, transparent 46%), #101010; }
-.auth-gate-card { border-color: #353535; background: linear-gradient(150deg, #1d1d1d, #151515); box-shadow: 0 24px 80px #0008; }
-.auth-gate-card .primary { color: #101010; }
-footer { border-color: #303030; }
-footer, footer small { color: #a6a6a6; }
-.modal-backdrop { background: #000b; backdrop-filter: blur(8px); }
-.modal { border-color: #383838; background: #191919; box-shadow: 0 26px 80px #0009; }
-.badge, .tag { border-color: #cbff0040; color: #cbff00; background: #cbff0012; }
-.simple-steps span { color: #eee; border-color: #353535; background: #1b1b1b; }
-.simple-steps b { color: #101010; background: #cbff00; }
-.simple-success { border-color: #cbff0080; background: #cbff000d; }
-.simple-success svg, .simple-success a { color: #cbff00; }
-
-@media (max-width: 760px) {
-  .sidebar { background: #141414; }
-  .mobile-bottom { border-top: 1px solid #303030; background: #141414f5; }
-  .mobile-bottom button.active { color: #cbff00; }
-  .mobile-bottom button.active:before { background: #cbff00; }
-}
-.arena {
-  border-color: #343434;
-  background: radial-gradient(ellipse at 50% 52%, #cbff0008, transparent 65%), #151515;
-}
-.arena:before { background: repeating-linear-gradient(90deg, transparent, transparent 78px, #ffffff04 79px), repeating-linear-gradient(0deg, transparent, transparent 78px, #ffffff04 79px); }
-.wheel-aura { background: radial-gradient(ellipse, #cbff0015, #ffffff05 45%, transparent 69%); }
-.wheel-shadow { background: #30330e; box-shadow: 0 15px 0 #1b1c0a, 0 23px 32px #000a, 0 0 45px #cbff0012; }
-.wheel-hub {
-  color: #fff;
-  border-color: #cbff00;
-  background: radial-gradient(circle at 50% 20%, #242424, #101010 70%);
-  box-shadow: 0 0 0 4px #171717, 0 0 0 5px #cbff00, 0 9px 17px #0009, inset 0 2px 15px #ffffff12;
-}
-.wheel-hub .hub-crown { color: #cbff00; }
-.wheel-hub i { color: #b7b7b7; }
-.wheel-pointer { background: linear-gradient(90deg, #9fc600, #e4ff87 45%, #cbff00); }
-.round-panel { border-color: #303030; background: linear-gradient(145deg, #1b1b1b, #141414); }
-.round-panel h2 em { color: #cbff00; }
-.countdown { border-color: #3a3a3a; background: #151515; }
-.countdown b { color: #cbff00; }
-.selected-animal { border-color: #343434; background: #202020; }
-.round-panel .primary {
-  color: #101010;
-  border: 1px solid #cbff00;
-  background: #cbff00;
-  box-shadow: 0 7px 22px #cbff0020;
-}
-.round-panel .primary:hover { background: #dcff4d; }
-.round-panel .secondary { color: #ededed; border-color: #3b3b3b; background: #242424; }
-.wheel-reveal { border-color: #cbff00; background: #181818f5; }
-.wheel-reveal small, .arena-footer svg { color: #cbff00; }
-.admin-stat-icon { color: #cbff00; border-color: #cbff0050; background: #cbff0010; }
-.admin-stat-roulette > .admin-stat-icon, .admin-stat-scratch > .admin-stat-icon,
-.admin-stat-rounds > .admin-stat-icon { color: #cbff00; background: #cbff0010; }
 .brand-icon img {
   width: 30px;
   height: 30px;
@@ -4519,3 +4339,200 @@ footer, footer small { color: #a6a6a6; }
 @media(max-width:1000px) and (min-width:761px) { .topbar { gap: 18px; padding-inline: 22px; }.header-nav { gap: 17px; }.header-nav > button { font-size: 12px; }.top-actions { gap: 6px; }.header-money-action { padding: 0 9px; }.header-account b { max-width: 90px; } }
 @media(max-width:760px) { .topbar { height: auto; min-height: 62px; flex-wrap: wrap; gap: 7px 10px; padding: 7px 12px 0; }.menu-toggle { display: grid; order: 0; place-items: center; width: 28px; height: 36px; color: #e5e8e5; }.top-brand { order: 1; width: 44px; height: 38px; }.top-brand img { width: 42px; height: 37px; }.top-actions { order: 2; gap: 5px; }.header-nav { order: 3; width: calc(100% + 24px); margin: 0 -12px; padding: 7px 12px 8px; gap: 22px; overflow-x: auto; border-top: 1px solid #ffffff12; scrollbar-width: none; }.header-nav::-webkit-scrollbar { display: none; }.header-nav > button { font-size: 12px; }.topbar .balance { min-height: 32px; padding: 0 8px; }.topbar .balance b { font-size: 11px; }.header-money-action { min-height: 32px; gap: 5px; padding: 0 8px; font-size: 10px; }.header-account { gap: 5px; }.header-account b { max-width: 73px; font-size: 10px; }.topbar .top-avatar { width: 29px; height: 29px; } }
 @media(max-width:420px) { .header-money-action { width: 32px; padding: 0; overflow: hidden; font-size: 0; }.header-money-action svg { width: 16px; height: 16px; }.header-account b { display: none; }.header-nav { gap: 17px; }.header-nav > .header-referral { display: none; } }
+
+/* Bichos Vegas · nova identidade visual preto, branco e lime. */
+:root {
+  color-scheme: dark;
+  --bg: #101010;
+  --panel: #171717;
+  --panel2: #1c1c1c;
+  --surface: #181818;
+  --line: #303030;
+  --text: #ffffff;
+  --muted: #b7b7b7;
+  --gold: #cbff00;
+  --pale: #cbff00;
+  --green: #cbff00;
+}
+html { background: #101010; }
+body, .app, .app-body, #main { background-color: #101010; color: #fff; }
+body { background-image: radial-gradient(ellipse at 50% -35%, #cbff0010, transparent 62%); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, summary:focus-visible { outline-color: #cbff00; }
+::selection { color: #101010; background: #cbff00; }
+
+.sidebar {
+  background: #141414;
+  border-right: 1px solid #2d2d2d;
+  box-shadow: 12px 0 36px #0002;
+}
+.brand-lockup { filter: drop-shadow(0 6px 18px #cbff0026); }
+.topbar {
+  background: #101010f2;
+  border-bottom-color: #2d2d2d;
+  backdrop-filter: blur(18px);
+}
+.header-nav > button, .header-nav > button svg { color: #e8e8e8; }
+.header-nav > button:hover, .header-nav > button.active { color: #cbff00; }
+.header-nav > button.active svg { color: #cbff00; }
+.nav-item { color: #c4c4c4; }
+.nav-item:hover { color: #fff; background: #ffffff0b; }
+.nav-item.active {
+  color: #cbff00;
+  background: linear-gradient(100deg, #cbff001c, #cbff0008);
+  border-color: #cbff0055;
+  box-shadow: inset 3px 0 #cbff00;
+}
+.nav-item.active svg, .sidebar > nav:first-of-type .nav-item:first-child { color: #cbff00; }
+.sidebar > nav:first-of-type .nav-item:first-child { border-color: #cbff0055; }
+
+.page-title { margin-bottom: 24px; }
+.page-title h1, .page-title h2, h1, h2, h3 { color: #fff; }
+.page-title p, .subtle, .surface p, .surface small { color: #b7b7b7; }
+.eyebrow, .admin-eyebrow, .page-title .eyebrow { color: #cbff00; }
+.surface {
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #1b1b1b, #151515);
+  box-shadow: 0 10px 30px #0000001f;
+}
+.surface:hover { border-color: #414141; }
+.round-panel, .metric, .admin-banner, .admin-game-summary, .admin-activity-card,
+.admin-status-card, .admin-stat-card, .simple-home-hero, .scratch-hero {
+  border-color: #303030;
+  background: linear-gradient(145deg, #1c1c1c, #151515);
+}
+.round-panel { box-shadow: 0 18px 44px #0004; }
+.metric { color: #fff; }
+.metric b, .admin-metrics strong, .admin-stat-card > strong,
+.admin-game-numbers b, .admin-overview-heading h2 { color: #cbff00; }
+.admin-banner { color: #cbff00; }
+.admin-banner b span { color: #cbff00; background: #cbff0017; }
+.admin-tabs button, .secondary, .icon-button {
+  color: #e7e7e7;
+  border-color: #373737;
+  background: #202020;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+.admin-tabs button:hover, .secondary:hover, .icon-button:hover {
+  color: #fff;
+  border-color: #cbff0080;
+  background: #272a1b;
+}
+.admin-tabs button.active, .mode-tabs button.active {
+  color: #101010;
+  border-color: #cbff00;
+  background: #cbff00;
+  box-shadow: 0 5px 18px #cbff0024;
+}
+.primary, .header-money-action, .simple-home-cta, .scratch-buy-button {
+  color: #101010;
+  border: 1px solid #cbff00;
+  background: #cbff00;
+  box-shadow: 0 7px 22px #cbff0020;
+  font-weight: 850;
+}
+.primary:hover, .header-money-action:hover, .simple-home-cta:hover, .scratch-buy-button:hover {
+  color: #101010;
+  border-color: #dbff4b;
+  background: #dbff4b;
+  box-shadow: 0 9px 28px #cbff0033;
+  transform: translateY(-1px);
+}
+.balance, .balance b, .gold-text, em, .text-link, .admin-section-title .text-link,
+.admin-help-text a, .simple-home-options strong { color: #cbff00; }
+.topbar .balance { color: #fff; background: #202020; border: 1px solid #343434; }
+input, select, textarea, .field input, .field select, .field textarea {
+  color: #fff;
+  border-color: #3a3a3a;
+  background: #202020;
+}
+input::placeholder, textarea::placeholder { color: #858585; }
+table th { color: #cbff00; }
+table td, .recent-row, .admin-event-row { border-color: #303030; }
+.admin-status-dot.is-ok, .live-dot, .admin-event-roulette { background: #cbff00; box-shadow: 0 0 10px #cbff0050; }
+.roulette-results, .prose, .admin-layout .surface { border-color: #303030; }
+.simple-type-picker button, .simple-animal-grid button, .simple-number-tabs button,
+.group-picker button, .tens-picker button { color: #e8e8e8; border-color: #383838; background: #1c1c1c; }
+.simple-type-picker button.selected, .simple-number-tabs button.selected,
+.simple-animal-grid button.selected, .group-picker button.selected, .tens-picker button.selected {
+  color: #cbff00;
+  border-color: #cbff00;
+  background: #cbff0014;
+  box-shadow: inset 0 0 0 1px #cbff0040;
+}
+.simple-type-picker svg, .simple-animal-grid .selected svg, .simple-summary-line strong { color: #cbff00; }
+.scratch-match-actions .scratch-auto, .scratch-match-actions .scratch-lightning { background: #292929; color: #fff; }
+.scratch-prize-note > b, .scratch-prize.revealed { color: #cbff00; }
+.prize-ticker { border-color: #303030; background: #171717; }
+.prize-ticker-title small, .prize-ticker-card em { color: #cbff00; }
+.prize-ticker-card { border-color: #303030; background: #1b1b1b; }
+.prize-ticker-card small { color: #cbff00; }
+.auth-gate { background: radial-gradient(ellipse at 50% 0%, #cbff0012, transparent 46%), #101010; }
+.auth-gate-card { border-color: #353535; background: linear-gradient(150deg, #1d1d1d, #151515); box-shadow: 0 24px 80px #0008; }
+.auth-gate-card .primary { color: #101010; }
+footer { border-color: #303030; }
+footer, footer small { color: #a6a6a6; }
+.modal-backdrop { background: #000b; backdrop-filter: blur(8px); }
+.modal { border-color: #383838; background: #191919; box-shadow: 0 26px 80px #0009; }
+.badge, .tag { border-color: #cbff0040; color: #cbff00; background: #cbff0012; }
+.simple-steps span { color: #eee; border-color: #353535; background: #1b1b1b; }
+.simple-steps b { color: #101010; background: #cbff00; }
+.simple-success { border-color: #cbff0080; background: #cbff000d; }
+.simple-success svg, .simple-success a { color: #cbff00; }
+
+@media (max-width: 760px) {
+  .sidebar { background: #141414; }
+  .mobile-bottom { border-top: 1px solid #303030; background: #141414f5; }
+  .mobile-bottom button.active { color: #cbff00; }
+  .mobile-bottom button.active:before { background: #cbff00; }
+}
+.arena {
+  border-color: #343434;
+  background: radial-gradient(ellipse at 50% 52%, #cbff0008, transparent 65%), #151515;
+}
+.arena:before { background: repeating-linear-gradient(90deg, transparent, transparent 78px, #ffffff04 79px), repeating-linear-gradient(0deg, transparent, transparent 78px, #ffffff04 79px); }
+.wheel-aura { background: radial-gradient(ellipse, #cbff0015, #ffffff05 45%, transparent 69%); }
+.wheel-shadow { background: #30330e; box-shadow: 0 15px 0 #1b1c0a, 0 23px 32px #000a, 0 0 45px #cbff0012; }
+.wheel-hub {
+  color: #fff;
+  border-color: #cbff00;
+  background: radial-gradient(circle at 50% 20%, #242424, #101010 70%);
+  box-shadow: 0 0 0 4px #171717, 0 0 0 5px #cbff00, 0 9px 17px #0009, inset 0 2px 15px #ffffff12;
+}
+.wheel-hub .hub-crown { color: #cbff00; }
+.wheel-hub i { color: #b7b7b7; }
+.wheel-pointer { background: linear-gradient(90deg, #9fc600, #e4ff87 45%, #cbff00); }
+.round-panel { border-color: #303030; background: linear-gradient(145deg, #1b1b1b, #141414); }
+.round-panel h2 em { color: #cbff00; }
+.countdown { border-color: #3a3a3a; background: #151515; }
+.countdown b { color: #cbff00; }
+.selected-animal { border-color: #343434; background: #202020; }
+.round-panel .primary {
+  color: #101010;
+  border: 1px solid #cbff00;
+  background: #cbff00;
+  box-shadow: 0 7px 22px #cbff0020;
+}
+.round-panel .primary:hover { background: #dcff4d; }
+.round-panel .secondary { color: #ededed; border-color: #3b3b3b; background: #242424; }
+.wheel-reveal { border-color: #cbff00; background: #181818f5; }
+.wheel-reveal small, .arena-footer svg { color: #cbff00; }
+.admin-stat-icon { color: #cbff00; border-color: #cbff0050; background: #cbff0010; }
+.admin-stat-roulette > .admin-stat-icon, .admin-stat-scratch > .admin-stat-icon,
+.admin-stat-rounds > .admin-stat-icon { color: #cbff00; background: #cbff0010; }
+.topbar .top-avatar { color: #101010; background: #cbff00; }
+.surface :is(svg, .withdrawal-demo-icon, .withdrawal-demo-status-icon, .admin-stat-icon) { color: #cbff00; }
+.withdrawal-demo-hero h2, .withdrawal-admin-hero h2, .withdrawal-demo-info h3,
+.withdrawal-demo-info strong, .withdrawal-demo-status h3, .withdrawal-admin-note { color: #cbff00; }
+.scratch-physical-card { border-color: #cbff00; background: linear-gradient(145deg, #303030, #111 48%, #252525); }
+.scratch-chip { border-color: #cbff00; background: linear-gradient(145deg, #f4ffbb, #cbff00); }
+.scratch-match-board.purchased .scratch-match-cell { background: #ededed; }
+.scratch-match-board.purchased .scratch-match-cell > small { color: #303030; }
+.scratch-match-board.purchased .scratch-match-cell > span { color: #789800; }
+.scratch-game-cover { border-color: #cbff0080; color: #fff; background: radial-gradient(ellipse at 50% 5%, #393f20, #171717 60%, #111); }
+.scratch-game-cover::before, .scratch-game-cover::after, .scratch-game-cover > small,
+.scratch-game-price, .scratch-detail-hero h2, .scratch-detail-hero b,
+.scratch-prize-gallery small { color: #cbff00; }
+.scratch-detail-hero { border-color: #4a4a4a; background: radial-gradient(ellipse at 90% 0%, #cbff0014, #171717 70%); }
+.prize-ticker-title small, .prize-ticker-card em, .prize-ticker-card small { color: #cbff00; }
