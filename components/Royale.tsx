@@ -1277,8 +1277,8 @@ export default function Royale() {
                   <article className="surface account-profile-wallet">
                     <div className="account-profile-wallet-icon"><Wallet size={19} /></div>
                     <span className="eyebrow">CARTEIRA VIRTUAL</span>
-                    <strong>{data.user.points.toLocaleString('pt-BR')} <small>créditos</small></strong>
-                    <p>Saldo demonstrativo para usar nas modalidades. Não tem conversão em dinheiro.</p>
+                    <strong>R$ {(data.user.points / 100).toFixed(2).replace('.', ',')} <small>saldo</small></strong>
+                    <p>Saldo para usar nas modalidades.</p>
                     <button className="primary" onClick={() => navigate('withdrawal')}>
                       Ver carteira <ArrowRight size={15} />
                     </button>
@@ -1286,7 +1286,7 @@ export default function Royale() {
                 </section>
               )}
               {page === 'withdrawal' && (
-                <WithdrawalScreen points={data.user?.points || 0} registered={!!data.user?.email} />
+                <WithdrawalScreen balance={data.user?.points || 0} registered={!!data.user?.email} />
               )}
               {activePage === 'admin' &&
                 (data.user?.role === 'ADMIN' ? (

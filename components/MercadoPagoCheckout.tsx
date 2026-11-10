@@ -214,7 +214,7 @@ export default function MercadoPagoCheckout({
         <div className="mp-success">
           <div className="success-icon">✓</div>
           <h4>Pagamento aprovado!</h4>
-          <p>Seus créditos foram adicionados.</p>
+          <p>Seu saldo foi adicionado.</p>
           <button className="primary" onClick={onClose}>Fechar</button>
         </div>
       )}

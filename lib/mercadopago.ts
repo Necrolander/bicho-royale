@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import https from 'node:https';
 import { ApiError } from './auth';
 import { audit, one, run, transaction } from './db';
@@ -62,6 +62,36 @@ function loadConfig(): MercadoPagoConfig {
   const decipher = createDecipheriv('aes-256-gcm', mpKey(), iv);
   decipher.setAuthTag(tag);
   return JSON.parse(Buffer.concat([decipher.update(payload), decipher.final()]).toString('utf8')) as MercadoPagoConfig;
+}
+
+export function verifyMercadoPagoWebhookSignature(
+  signatureHeader: string | null,
+  requestId: string | null,
+  dataId: string | null,
+): boolean {
+  if (!signatureHeader || !requestId || !dataId) return false;
+  let secret: string;
+  try {
+    secret = loadConfig().webhookSecret;
+  } catch {
+    return false;
+  }
+  if (!secret) return false;
+
+  const fields = Object.fromEntries(
+    signatureHeader.split(',').map((field) => {
+      const separator = field.indexOf('=');
+      return separator < 0 ? ['', ''] : [field.slice(0, separator).trim(), field.slice(separator + 1).trim()];
+    }),
+  );
+  const timestamp = fields.ts;
+  const suppliedHash = fields.v1;
+  if (!timestamp || !/^[a-f0-9]{64}$/i.test(suppliedHash || '')) return false;
+
+  const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${timestamp};`;
+  const expectedHash = createHmac('sha256', secret).update(manifest).digest();
+  const receivedHash = Buffer.from(suppliedHash, 'hex');
+  return receivedHash.length === expectedHash.length && timingSafeEqual(receivedHash, expectedHash);
 }
 
 function mpRequest(config: MercadoPagoConfig, method: string, path: string, body?: unknown): Promise<Record<string, unknown>> {
@@ -144,15 +174,21 @@ export async function createMercadoPagoPayment(
   });
 
   try {
+    const payerData: Record<string, unknown> = {
+      email: payerEmail,
+      ...(payerIdentification ? { identification: payerIdentification } : {}),
+    };
+    // Para PIX, adicionar identification com CPF (usa email como fallback se não tem CPF)
+    if (paymentMethod === 'pix' && !payerIdentification) {
+      payerData.identification = { type: 'CPF', number: payerEmail.replace(/\D/g, '').slice(0, 11) || '00000000000' };
+    }
+
     const paymentData: Record<string, unknown> = {
       transaction_amount: amountCents / 100,
       payment_method_id: mpPaymentMethod,
       external_reference: externalReference,
       notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/mercadopago`,
-      payer: {
-        email: payerEmail,
-        ...(payerIdentification ? { identification: payerIdentification } : {}),
-      },
+      payer: payerData,
       // Para PIX e boleto, não precisa de token
       ...(token ? { token } : {}),
       ...(installments ? { installments } : {}),
@@ -165,9 +201,21 @@ export async function createMercadoPagoPayment(
     }
 
     const response = await mpRequest(config, 'POST', '/payments', paymentData);
-    const transactionData = (response.point_of_interaction as
-      | { transaction_data?: { qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown } }
-      | undefined)?.transaction_data;
+    const pointOfInteraction = response.point_of_interaction as
+      | { transaction_data?: { qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }; qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }
+      | undefined;
+
+    // PIX QR code pode vir em point_of_interaction.transaction_data OU direto em point_of_interaction
+    const transactionData = pointOfInteraction?.transaction_data;
+    const qrCode = (typeof transactionData?.qr_code === 'string' ? transactionData.qr_code
+      : typeof pointOfInteraction?.qr_code === 'string' ? pointOfInteraction.qr_code
+      : undefined) as string | undefined;
+    const qrCodeBase64 = (typeof transactionData?.qr_code_base64 === 'string' ? transactionData.qr_code_base64
+      : typeof pointOfInteraction?.qr_code_base64 === 'string' ? pointOfInteraction.qr_code_base64
+      : undefined) as string | undefined;
+    const ticketUrl = (typeof transactionData?.ticket_url === 'string' ? transactionData.ticket_url
+      : typeof pointOfInteraction?.ticket_url === 'string' ? pointOfInteraction.ticket_url
+      : undefined) as string | undefined;
 
     const result: CreatePaymentResult = {
       id,
@@ -175,9 +223,9 @@ export async function createMercadoPagoPayment(
       amountCents,
       status: response.status as string,
       paymentMethod: paymentMethod.toUpperCase(),
-      qrCode: typeof transactionData?.qr_code === 'string' ? transactionData.qr_code : undefined,
-      qrCodeBase64: typeof transactionData?.qr_code_base64 === 'string' ? transactionData.qr_code_base64 : undefined,
-      ticketUrl: typeof transactionData?.ticket_url === 'string' ? transactionData.ticket_url : undefined,
+      qrCode,
+      qrCodeBase64,
+      ticketUrl,
       statusDetail: response.status_detail as string,
       dateApproved: response.date_approved as string,
     };

@@ -13,15 +13,13 @@ type Withdrawal = {
   admin_note: string | null;
 };
 
-export default function WithdrawalScreen({ points, registered }: { points: number; registered: boolean }) {
+export default function WithdrawalScreen({ balance, registered }: { balance: number; registered: boolean }) {
   const [amount, setAmount] = useState('');
   const [cpf, setCpf] = useState('');
   const [pixKey, setPixKey] = useState('');
   const [items, setItems] = useState<Withdrawal[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [showCpfModal, setShowCpfModal] = useState(false);
-  const [tempCpf, setTempCpf] = useState('');
   const [userCpf, setUserCpf] = useState('');
 
   const load = async () => {
@@ -29,7 +27,6 @@ export default function WithdrawalScreen({ points, registered }: { points: numbe
       if (registered) {
         const data = await api('withdrawals');
         setItems(data);
-        // Get user CPF from bootstrap
         const user = await api('bootstrap');
         if (user.user?.cpf) setUserCpf(user.user.cpf);
       }
@@ -42,16 +39,14 @@ export default function WithdrawalScreen({ points, registered }: { points: numbe
     return nums.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
 
-  const formatPixKey = (value: string) => value;
-
   const create = async () => {
     const cents = Math.round(Number(amount.replace(',', '.')) * 100);
     const cpfClean = cpf.replace(/\D/g, '');
     if (!Number.isInteger(cents) || cents < 100 || cents > 100000) {
       setMessage('Informe um valor de R$ 1,00 a R$ 1.000,00.'); return;
     }
-    if (cents > points) {
-      setMessage(`Saldo insuficiente. Você tem ${(points/100).toFixed(2).replace('.', ',')} pts.`); return;
+    if (cents > balance) {
+      setMessage(`Saldo insuficiente. Seu saldo é R$ ${(balance/100).toFixed(2).replace('.', ',')}.`); return;
     }
     if (cpfClean.length !== 11) {
       setMessage('CPF deve ter 11 dígitos.'); return;
@@ -76,9 +71,9 @@ export default function WithdrawalScreen({ points, registered }: { points: numbe
       <div className="withdrawal-form">
         <div className="balance-card">
           <span className="eyebrow">SALDO DISPONÍVEL</span>
-          <b>R$ {(points / 100).toFixed(2).replace('.', ',')}</b>
+          <b>R$ {(balance / 100).toFixed(2).replace('.', ',')}</b>
         </div>
-        <label className="field">Valor em reais<input type="number" min="1" max="1000" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10.00" /></label>
+        <label className="field">Valor do saque<input type="number" min="1" max="1000" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10.00" /></label>
         <label className="field">CPF (cadastrado no perfil)<input type="text" value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} disabled={!!userCpf} /></label>
         {userCpf && <p style={{fontSize: '0.85rem', color: 'var(--muted)'}}>CPF do perfil: {userCpf}</p>}
         <label className="field">Chave Pix (opcional, padrão: CPF)<input type="text" value={pixKey} onChange={(e) => setPixKey(e.target.value)} placeholder="CPF, e-mail, telefone ou aleatória" /></label>

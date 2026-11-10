@@ -108,7 +108,7 @@ export default function DepositScreen({
   const handleMPSuccess = async () => {
     setShowMPCheckout(false);
     await load();
-    setMessage('Pagamento aprovado! Créditos adicionados.');
+    setMessage('Pagamento aprovado! Saldo adicionado.');
   };
 
   const handleMPError = (error: string) => {
@@ -137,7 +137,7 @@ export default function DepositScreen({
     if (!registered) return (
       <div className="deposit-unavailable">
         <div className="deposit-unavailable-icon"><Wallet size={19} /></div>
-        <div><b>Entre na sua conta para continuar</b><p>Seu histórico e os créditos ficam vinculados ao seu cadastro.</p></div>
+        <div><b>Entre na sua conta para continuar</b><p>Seu histórico e o saldo ficam vinculados ao seu cadastro.</p></div>
         <button className="primary" onClick={onRegister}>Entrar ou cadastrar <ArrowRight size={15} /></button>
       </div>
     );
@@ -243,7 +243,7 @@ export default function DepositScreen({
     <section className="surface deposit-page-hero">
       <div className="deposit-page-hero-copy">
         <span className="eyebrow"><Wallet size={14} /> CARTEIRA BICHOS VEGAS</span>
-        <h2>Adicionar créditos</h2>
+        <h2>Adicionar saldo</h2>
         <p>Escolha um valor e pague pelo método que preferir. Você acompanha a confirmação e o histórico por aqui.</p>
         <div className="deposit-trust-points">
           <span><ShieldCheck size={14} /> Confirmação pelo provedor</span>
@@ -252,8 +252,8 @@ export default function DepositScreen({
       </div>
       <button className="deposit-balance-card" onClick={onViewAccount}>
         <span>SEU SALDO ATUAL</span>
-        <strong>{points.toLocaleString('pt-BR')}</strong>
-        <small>créditos <ArrowRight size={13} /></small>
+        <strong>R$ {(points / 100).toFixed(2).replace('.', ',')}</strong>
+        <small>saldo <ArrowRight size={13} /></small>
       </button>
     </section>
 

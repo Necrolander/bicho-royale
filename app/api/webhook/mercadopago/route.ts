@@ -1,21 +1,25 @@
 import { headers } from 'next/headers';
-import { handleMercadoPagoWebhook } from '@/lib/mercadopago';
+import { handleMercadoPagoWebhook, verifyMercadoPagoWebhookSignature } from '@/lib/mercadopago';
 import { audit } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   try {
     const h = await headers();
-    const topic = h.get('x-topic') || h.get('X-Topic');
-    const resourceId = h.get('x-resource-id') || h.get('X-Resource-Id') || h.get('data.id');
+    const url = new URL(req.url);
+    const topic = url.searchParams.get('type') || h.get('x-topic');
+    const resourceId = url.searchParams.get('data.id') || h.get('x-resource-id');
 
     if (!topic || !resourceId) {
       return new Response('Missing topic or resource id', { status: 400 });
     }
+    if (!verifyMercadoPagoWebhookSignature(h.get('x-signature'), h.get('x-request-id'), resourceId)) {
+      return new Response('Invalid webhook signature', { status: 401 });
+    }
 
-    await handleMercadoPagoWebhook(topic, resourceId);
+    if (topic === 'payment') await handleMercadoPagoWebhook(topic, resourceId);
 
     audit(null, 'MP_WEBHOOK_RECEIVED', { topic, resourceId });
     return new Response('OK', { status: 200 });
