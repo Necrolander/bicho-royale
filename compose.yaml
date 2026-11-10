@@ -1,0 +1,14 @@
+services:
+  royale:
+    build: .
+    ports:
+      - '127.0.0.1:3010:3010'
+    environment:
+      DATABASE_PATH: /app/data/bicho-royale.sqlite
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bichoroyale.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - royale-data:/app/data
+    restart: unless-stopped
+volumes:
+  royale-data:

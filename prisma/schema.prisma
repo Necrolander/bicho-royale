@@ -1,0 +1,162 @@
+// PostgreSQL design reference. Not the active SQLite adapter.
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum RoundState {
+  SCHEDULED
+  OPEN
+  LOCKED
+  DRAWING
+  PUBLISHED
+  CANCELLED
+}
+enum RoundType {
+  ROULETTE
+  TRADITIONAL
+}
+model Role {
+  name String @id
+  users User[]
+}
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  email String? @unique
+  passwordHash String?
+  roleName String
+  role Role @relation(fields:[roleName],references:[name])
+  blocked Boolean @default(false)
+  points Int @default(1000)
+  createdAt DateTime @default(now())
+  sessions UserSession[]
+  entries DemoEntry[]
+  transactions VirtualPointTransaction[]
+  notifications Notification[]
+  preferences UserPreference?
+}
+model UserSession {
+  id String @id
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  expiresAt DateTime
+  @@index([userId])
+}
+model AnimalGroup {
+  id Int @id
+  name String
+  tens String[]
+}
+model GameMode {
+  id String @id
+  definition Json
+  entries DemoEntry[]
+}
+model DemoRound {
+  id String @id @default(uuid()) @db.Uuid
+  type RoundType
+  state RoundState
+  opensAt DateTime
+  locksAt DateTime
+  publishedAt DateTime?
+  seed String
+  commitment String
+  result Json?
+  rules Json
+  createdAt DateTime @default(now())
+  entries DemoEntry[]
+  drawResult DrawResult?
+  @@index([state,locksAt])
+}
+model DrawResult {
+  roundId String @id @db.Uuid
+  round DemoRound @relation(fields:[roundId],references:[id])
+  result Json
+  createdAt DateTime @default(now())
+}
+model DemoEntry {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  roundId String @db.Uuid
+  round DemoRound @relation(fields:[roundId],references:[id])
+  modeId String
+  mode GameMode @relation(fields:[modeId],references:[id])
+  selection Json
+  points Int
+  idempotencyKey String
+  outcome Json?
+  createdAt DateTime @default(now())
+  transaction VirtualPointTransaction?
+  @@unique([userId,idempotencyKey])
+  @@index([userId,createdAt])
+  @@index([roundId])
+}
+model VirtualPointTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  entryId String? @unique @db.Uuid
+  entry DemoEntry? @relation(fields:[entryId],references:[id])
+  amount Int
+  balance Int
+  createdAt DateTime @default(now())
+}
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  message String
+  read Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([userId,createdAt])
+}
+model UserPreference {
+  userId String @id @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  value Json
+}
+model AdminSetting {
+  key String @id
+  value Json
+}
+model AuditLog {
+  seq Int @id @default(autoincrement())
+  id String @unique @default(uuid()) @db.Uuid
+  actor String?
+  action String
+  detail Json
+  createdAt DateTime @default(now())
+  previousHash String
+  hash String
+}
+model ContentPage {
+  slug String @id
+  title String
+  body String
+}
+model MercadoPagoConfig {
+  id Int @id @default(1)
+  encrypted String
+  environment String
+  updatedAt DateTime @db.DateTime
+  @@constraint(id = 1)
+}
+model MercadoPagoDeposit {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user User @relation(fields:[userId],references:[id])
+  externalReference String @unique @db.Uuid
+  amountCents Int
+  paymentMethod String
+  status String
+  initPoint String?
+  sandboxInitPoint String?
+  createdAt DateTime @default(now())
+  confirmedAt DateTime?
+  paymentId String?
+  @@index([userId,createdAt])
+}

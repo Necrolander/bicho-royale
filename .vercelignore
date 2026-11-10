@@ -1,0 +1,16 @@
+data/
+artifacts/
+e2e/
+tests/
+scripts/
+migrations/
+prisma/
+*.md
+Dockerfile
+compose.yaml
+.env*
+.next/
+.next-e2e/
+node_modules/
+playwright-report/
+test-results/
