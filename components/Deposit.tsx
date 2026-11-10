@@ -159,7 +159,7 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
               {mp.qr_code && !mp.qr_code_base64 && (
                 <div style={{ marginTop: 8 }}>
                   <textarea readOnly value={mp.qr_code} rows={3} style={{ width: '100%' }} />
-                  <button className="secondary" onClick={() => void navigator.clipboard.writeText(mp.qr_code)}>Copiar código PIX</button>
+                  <button className="secondary" onClick={() => void navigator.clipboard.writeText(mp.qr_code || '')}>Copiar código PIX</button>
                 </div>
               )}
               {mp.ticket_url && (

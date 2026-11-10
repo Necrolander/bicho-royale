@@ -165,6 +165,9 @@ export async function createMercadoPagoPayment(
     }
 
     const response = await mpRequest(config, 'POST', '/payments', paymentData);
+    const transactionData = (response.point_of_interaction as
+      | { transaction_data?: { qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown } }
+      | undefined)?.transaction_data;
 
     const result: CreatePaymentResult = {
       id,
@@ -172,9 +175,9 @@ export async function createMercadoPagoPayment(
       amountCents,
       status: response.status as string,
       paymentMethod: paymentMethod.toUpperCase(),
-      qrCode: (response.point_of_interaction?.transaction_data?.qr_code as string) || undefined,
-      qrCodeBase64: (response.point_of_interaction?.transaction_data?.qr_code_base64 as string) || undefined,
-      ticketUrl: (response.point_of_interaction?.transaction_data?.ticket_url as string) || undefined,
+      qrCode: typeof transactionData?.qr_code === 'string' ? transactionData.qr_code : undefined,
+      qrCodeBase64: typeof transactionData?.qr_code_base64 === 'string' ? transactionData.qr_code_base64 : undefined,
+      ticketUrl: typeof transactionData?.ticket_url === 'string' ? transactionData.ticket_url : undefined,
       statusDetail: response.status_detail as string,
       dateApproved: response.date_approved as string,
     };
@@ -195,7 +198,7 @@ export async function createMercadoPagoPayment(
 
     transaction(() => {
       const setClause = Object.keys(updateFields).map(k => `${k}=?`).join(',');
-      const values = [...Object.values(updateFields), id];
+      const values = [...Object.values(updateFields).map((value) => value == null ? null : String(value)), id];
       run(`UPDATE mercadopago_deposits SET ${setClause} WHERE id=?`, ...values);
       audit(userId, 'MP_DEPOSIT_CREATED', { id, externalReference, mpPaymentId: response.id, status: response.status });
     });

@@ -30,6 +30,7 @@ import {
   LockKeyhole,
   Eye,
   EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import { animals, type ModeId } from '@/lib/game';
 import { translations, type Locale } from '@/lib/i18n';
@@ -182,7 +183,9 @@ export default function Royale() {
     router = useRouter(),
     page = resolvePage(pathname);
   const pageTitle =
-    page === 'admin'
+    page === 'home'
+      ? 'Início'
+      : page === 'admin'
       ? 'Administração'
       : page === 'scratch'
         ? 'Raspadinha'
@@ -214,7 +217,9 @@ export default function Royale() {
     previousRounds = useRef(new Set<string>());
   const t = translations[prefs.locale];
   const activePage: Page =
-    page === 'admin'
+    page === 'home'
+      ? 'home'
+      : page === 'admin'
       ? 'admin'
       : page === 'scratch'
         ? 'scratch'
@@ -425,6 +430,8 @@ export default function Royale() {
   const open = data?.rounds.find((r) => r.type === 'ROULETTE' && r.state === 'OPEN');
   const published =
     data?.rounds.filter((r) => r.type === 'ROULETTE' && r.state === 'PUBLISHED') || [];
+  const latestRouletteResult = published.find((round) => round.result?.group);
+  const enabledScratchGames = data?.settings.scratch.games?.filter((game) => game.enabled).length ?? 0;
   const seconds = open
     ? Math.max(0, Math.ceil((new Date(open.locks_at).getTime() - now) / 1000))
     : 0;
@@ -573,7 +580,7 @@ export default function Royale() {
         )}
       </AnimatePresence>
       <aside inert={!!modal} className={`sidebar ${menu ? 'mobile-open' : ''}`}>
-        <button className="brand" onClick={() => navigate('overview')} aria-label="Página inicial">
+        <button className="brand" onClick={() => navigate('home')} aria-label="Página inicial">
           {data?.settings.logo ? (
             <>
               <span className="brand-icon">
@@ -645,11 +652,11 @@ export default function Royale() {
           <button className="menu-toggle" onClick={() => setMenu(true)} aria-label="Abrir menu">
             <Menu />
           </button>
-          <button className="top-brand" onClick={() => navigate('roulette')} aria-label="Bichos Vegas — início">
+          <button className="top-brand" onClick={() => navigate('home')} aria-label="Bichos Vegas — início">
             <img src="/bichos-vegas-logo.png" alt="Bichos Vegas" />
           </button>
           <nav className="header-nav" aria-label="Navegação principal">
-            <button className={activePage === 'roulette' ? 'active' : ''} onClick={() => navigate('roulette')}>
+            <button className={activePage === 'home' ? 'active' : ''} onClick={() => navigate('home')}>
               <Home size={15} fill="currentColor" /> Início
             </button>
             <button className={activePage === 'roulette' ? 'active' : ''} onClick={() => navigate('roulette')}>
@@ -721,7 +728,7 @@ export default function Royale() {
           </section>
         )}
         <main id="main">
-          <div className="page-title">
+          {page !== 'home' && <div className="page-title">
             <div>
               <p className="eyebrow">
                 {page === 'roulette'
@@ -763,7 +770,7 @@ export default function Royale() {
               <HelpCircle size={16} />
               Como funciona <ArrowUpRight size={14} />
             </button>
-          </div>
+          </div>}
           <div className="announcement">
             <ShieldCheck size={13} />
             {data?.settings.announcement || t.virtual}
@@ -800,6 +807,59 @@ export default function Royale() {
             </div>
           ) : (
             <>
+              {page === 'home' && (
+                <section className="home-page" aria-labelledby="home-headline">
+                  <div className="home-hero">
+                    <div className="home-hero-copy">
+                      <span className="home-kicker"><Sparkles size={14} /> BICHOS VEGAS <i /> EXPERIÊNCIA DEMONSTRATIVA</span>
+                      <h1 id="home-headline">A sorte entra em cena.<br /><em>Você escolhe o jogo.</em></h1>
+                      <p>Entre no clima Vegas com a roletinha de 25 animais ou escolha uma raspadinha e descubra o resultado. Tudo em créditos virtuais.</p>
+                      <div className="home-hero-actions">
+                        <button className="primary" onClick={() => navigate('roulette')}>Ir para a roletinha <ArrowRight size={17} /></button>
+                        <button className="secondary" onClick={() => navigate('scratch')}>Ver raspadinhas <Ticket size={16} /></button>
+                      </div>
+                      <small><ShieldCheck size={13} /> Créditos demonstrativos, sem valor monetário.</small>
+                    </div>
+                    <div className="home-hero-art" aria-label="Último resultado da roleta">
+                      <div className="home-art-orbit home-art-orbit-one" />
+                      <div className="home-art-orbit home-art-orbit-two" />
+                      <span className="home-art-label"><span className="live-dot" /> ÚLTIMO GIRO PUBLICADO</span>
+                      {latestRouletteResult?.result?.group ? <>
+                        <AnimalArt id={latestRouletteResult.result.group} size={150} />
+                        <b>{animals[latestRouletteResult.result.group - 1].name}</b>
+                        <span className="home-result-tens">{animals[latestRouletteResult.result.group - 1].tens.join(' · ')}</span>
+                        <span className="home-result-group">GRUPO {String(latestRouletteResult.result.group).padStart(2, '0')}</span>
+                      </> : <>
+                        <img className="home-brand-art" src="/bichos-vegas-logo.png" alt="Bichos Vegas" />
+                        <b>O próximo giro vem aí</b>
+                        <span className="home-result-tens">Acompanhe os resultados aqui</span>
+                      </>}
+                    </div>
+                  </div>
+                  <div className="home-mode-heading">
+                    <div><span className="eyebrow">ESCOLHA SUA EXPERIÊNCIA</span><h2>Qual vai ser a sua?</h2></div>
+                    <span>Dois jogos. Uma plataforma.</span>
+                  </div>
+                  <div className="home-mode-cards">
+                    <button className="home-mode-card home-mode-roulette" onClick={() => navigate('roulette')}>
+                      <span className="home-mode-icon"><CircleDot size={23} /></span>
+                      <span className="home-mode-copy"><small>01 · ROLETA VEGAS</small><b>Escolha seus bichos</b><span>25 animais na roleta, com resultados publicados e conferíveis.</span></span>
+                      <span className="home-mode-link">ABRIR <ArrowUpRight size={16} /></span>
+                    </button>
+                    <button className="home-mode-card home-mode-scratch" onClick={() => navigate('scratch')}>
+                      <span className="home-mode-icon"><Ticket size={23} /></span>
+                      <span className="home-mode-copy"><small>02 · RASPADINHAS</small><b>Raspe para descobrir</b><span>{enabledScratchGames ? `${enabledScratchGames} opções demonstrativas disponíveis` : 'Abra os cartões e veja o que aparece'}.</span></span>
+                      <span className="home-mode-link">ABRIR <ArrowUpRight size={16} /></span>
+                    </button>
+                  </div>
+                  <div className="home-trust-row">
+                    <div><ShieldCheck size={17} /><span><b>Resultados publicados</b><small>Confira os giros recentes</small></span></div>
+                    <div><Wallet size={17} /><span><b>Créditos virtuais</b><small>Sem depósitos ou saques reais</small></span></div>
+                    <div><Ticket size={17} /><span><b>{data.scratchCards.length} cartões registrados</b><small>Seu histórico fica na conta</small></span></div>
+                  </div>
+                  {latestRouletteResult?.result?.group && <button className="home-results-link" onClick={() => navigate('roulette')}>Ver todos os resultados da roletinha <ArrowRight size={15} /></button>}
+                </section>
+              )}
               {page === 'roulette' && (
                 <>
                   <section className="arena-grid">

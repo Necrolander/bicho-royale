@@ -1,5 +1,6 @@
 import { modes } from './game';
 export const pagePaths = {
+  home: '/inicio',
   overview: '/dashboard',
   bet: '/apostar',
   roulette: '/roleta',
@@ -24,6 +25,7 @@ export const modePath = (id: string) =>
   `/modalidades/${id === 'cercado' ? 'grupo-cercado' : id === 'cabeca' ? 'grupo-na-cabeca' : id}`;
 export const validPaths = [...Object.values(pagePaths), ...modes.map((m) => modePath(m.id))];
 export function resolvePage(path: string): Page {
+  if (path === pagePaths.home) return 'home';
   if (path === pagePaths.admin || path.startsWith(`${pagePaths.admin}/`)) return 'admin';
   if (path === pagePaths.scratch) return 'scratch';
   if (path === pagePaths.deposit) return 'deposit';

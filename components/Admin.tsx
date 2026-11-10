@@ -857,9 +857,6 @@ export default function Admin({
                             {deposit.ticket_url && !deposit.qr_code_base64 && !deposit.qr_code && (
                               <a href={deposit.ticket_url} target="_blank" rel="noopener noreferrer" className="text-link">Ver boleto</a>
                             )}
-                            {!deposit.qr_code_base64 && !deposit.qr_code && !deposit.ticket_url && deposit.init_point && (
-                              <a href={deposit.init_point} target="_blank" rel="noopener noreferrer" className="text-link">Checkout Pro</a>
-                            )}
                           </td>
                           <td>
                             {deposit.confirmed_at
