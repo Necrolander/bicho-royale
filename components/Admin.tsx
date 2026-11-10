@@ -288,13 +288,13 @@ export default function Admin({
                   <span className="admin-stat-icon"><CircleDot size={19} /></span>
                   <small>ROLETINHA</small>
                   <strong>{report ? report.roulette.entries.toLocaleString('pt-BR') : '—'}</strong>
-                  <p>{report ? `${report.roulette.pointsWagered.toLocaleString('pt-BR')} créditos movimentados` : 'Carregando movimentação…'}</p>
+                  <p>{report ? `${report.roulette.pointsWagered.toLocaleString('pt-BR')} R$ movimentados` : 'Carregando movimentação…'}</p>
                 </article>
                 <article className="surface admin-stat-card admin-stat-scratch">
                   <span className="admin-stat-icon"><Ticket size={19} /></span>
                   <small>RASPADINHAS</small>
                   <strong>{report ? report.scratch.cards.toLocaleString('pt-BR') : '—'}</strong>
-                  <p>{report ? `${report.scratch.pointsSpent.toLocaleString('pt-BR')} créditos usados` : 'Carregando movimentação…'}</p>
+                  <p>{report ? `${report.scratch.pointsSpent.toLocaleString('pt-BR')} R$ usados` : 'Carregando movimentação…'}</p>
                 </article>
                 <article className="surface admin-stat-card admin-stat-rounds">
                   <span className="admin-stat-icon"><CalendarDays size={19} /></span>
@@ -313,10 +313,10 @@ export default function Admin({
                   </div>
                   {report ? <div className="admin-game-numbers">
                     <div><small>Participações</small><b>{report.roulette.entries.toLocaleString('pt-BR')}</b></div>
-                    <div><small>Créditos usados</small><b>{report.roulette.pointsWagered.toLocaleString('pt-BR')}</b></div>
+                    <div><small>R$ usados</small><b>R$ {(report.roulette.pointsWagered / 100).toFixed(2).replace('.', ',')}</b></div>
                     <div><small>Resultados conferidos</small><b>{report.roulette.winningEntries.toLocaleString('pt-BR')}</b></div>
                   </div> : <p className="admin-inline-loading">O resumo será exibido assim que carregar.</p>}
-                  <p className="admin-help-text">Os valores desta área são créditos demonstrativos. Abra “Vendas e movimentações” para filtrar por data e apostador.</p>
+                  <p className="admin-help-text">Os valores desta área são R$ demonstrativos. Abra “Vendas e movimentações” para filtrar por data e apostador.</p>
                 </section>
                 <section className="surface admin-game-summary">
                   <div className="admin-section-title">
@@ -357,7 +357,7 @@ export default function Admin({
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Depósitos pendentes</span><b>{report ? `${brl(report.pix.pendingCents)} · ${report.pix.pendingCount}` : '—'}</b></div>
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Saques</span><b>Não configurados</b></div>
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Falhas de login</span><b>{data.counts.errors}</b></div>
-                  <p className="admin-help-text">Roleta e raspadinhas usam créditos de demonstração. Esta tela não representa saldo em dinheiro.</p>
+                  <p className="admin-help-text">Roleta e raspadinhas usam R$ de demonstração. Esta tela não representa saldo em dinheiro.</p>
                   <button className="secondary admin-status-action" onClick={() => setTab('audit')}>Consultar auditoria <ArrowRight size={14} /></button>
                 </aside>
               </div>
@@ -380,7 +380,7 @@ export default function Admin({
                       <th>Usuário</th>
                       <th>Cadastro</th>
                       <th>Função</th>
-                      <th>Créditos</th>
+                      <th>R$</th>
                       <th>Estado</th>
                       <th>Ações</th>
                     </tr>
@@ -985,8 +985,8 @@ export default function Admin({
               </section>
               {!report ? <p>Carregando relatório…</p> : <>
                 <div className="admin-metrics report-metrics">
-                  <section className="surface"><small>ROULETA · apostas</small><strong>{report.roulette.entries}</strong><p>{report.roulette.pointsWagered.toLocaleString('pt-BR')} créditos apostados</p><small>{report.roulette.winningEntries} apostas conferiram · prêmios pagos: 0 créditos</small></section>
-                  <section className="surface"><small>RASPADINHA · jogadas</small><strong>{report.scratch.cards}</strong><p>{report.scratch.pointsSpent.toLocaleString('pt-BR')} créditos gastos</p><small>{report.scratch.prizePoints.toLocaleString('pt-BR')} créditos em prêmios · saldo líquido {report.scratch.netPoints.toLocaleString('pt-BR')}</small></section>
+                  <section className="surface"><small>ROULETA · apostas</small><strong>{report.roulette.entries}</strong><p>R$ {(report.roulette.pointsWagered / 100).toFixed(2).replace('.', ',')} apostados</p><small>{report.roulette.winningEntries} apostas conferiram · prêmios pagos: R$ 0,00</small></section>
+                  <section className="surface"><small>RASPADINHA · jogadas</small><strong>{report.scratch.cards}</strong><p>R$ {(report.scratch.pointsSpent / 100).toFixed(2).replace('.', ',')} gastos</p><small>R$ {(report.scratch.prizePoints / 100).toFixed(2).replace('.', ',')} em prêmios · saldo líquido R$ {(report.scratch.netPoints / 100).toFixed(2).replace('.', ',')}</small></section>
                   <section className="surface"><small>PIX · depósitos confirmados</small><strong>{brl(report.pix.confirmedCents)}</strong><p>{report.pix.confirmedCount} depósitos confirmados</p><small>Pendentes: {brl(report.pix.pendingCents)} ({report.pix.pendingCount}) · outros estados: {report.pix.otherCount}</small></section>
                   <section className="surface"><small>SAQUES · não configurados</small><strong>{brl(report.withdrawals.amountCents)}</strong><p>{report.withdrawals.count} saques registrados</p><small>Não há fluxo de saque configurado nesta plataforma.</small></section>
                 </div>
@@ -998,12 +998,12 @@ export default function Admin({
                     <tbody>{report.events.map((event) => {
                       const detail = event.detail;
                       const summary = event.category === 'ROULETTE'
-                        ? `Rodada #${String(detail.roundId || '').slice(0, 8)} · ${String(detail.mode || '')} · ${Array.isArray(detail.selection) ? detail.selection.join(', ') : ''} · ${Number(detail.points || 0)} créditos${detail.outcome && typeof detail.outcome === 'object' && 'win' in detail.outcome && detail.outcome.win ? ' · conferida' : ''}`
+                        ? `Rodada #${String(detail.roundId || '').slice(0, 8)} · ${String(detail.mode || '')} · ${Array.isArray(detail.selection) ? detail.selection.join(', ') : ''} · R$ ${(Number(detail.points || 0) / 100).toFixed(2).replace('.', ',')}${detail.outcome && typeof detail.outcome === 'object' && 'win' in detail.outcome && detail.outcome.win ? ' · conferida' : ''}`
                         : event.category === 'SCRATCH'
-                          ? `${String(detail.gameName || 'Raspadinha')} · custo ${Number(detail.costPoints || 0)} · prêmio ${Number(detail.prizePoints || 0)} créditos · ${String(detail.prize || '')}`
+                          ? `${String(detail.gameName || 'Raspadinha')} · custo R$ ${(Number(detail.costPoints || 0) / 100).toFixed(2).replace('.', ',')} · prêmio R$ ${(Number(detail.prizePoints || 0) / 100).toFixed(2).replace('.', ',')} · ${String(detail.prize || '')}`
                           : event.category === 'PIX'
                             ? `${brl(Number(detail.amountCents || 0))} · ${String(detail.status || '')}${detail.endToEndId ? ` · E2E ${String(detail.endToEndId)}` : ''}`
-                            : `${Number(detail.points || 0) > 0 ? '+' : ''}${Number(detail.points || 0)} créditos · saldo ${Number(detail.balanceAfter || 0)}`;
+                            : `${Number(detail.points || 0) > 0 ? '+' : ''}R$ ${(Number(detail.points || 0) / 100).toFixed(2).replace('.', ',')} · saldo R$ ${(Number(detail.balanceAfter || 0) / 100).toFixed(2).replace('.', ',')}`;
                       return <tr key={`${event.category}-${event.id}`}>
                         <td>{new Date(event.created_at).toLocaleString('pt-BR')}</td>
                         <td><b>{event.name}</b><small>{event.email || 'Visitante'}</small><button className="text-link" onClick={() => void api(`admin/user-history?id=${event.user_id}`).then(setInspect).catch((e) => notify(e.message))}>Abrir histórico completo</button></td>
@@ -1209,7 +1209,7 @@ export default function Admin({
             <section className="surface">
               <h2>Configurar Raspadinha Vegas</h2>
               <p>
-                Esta versão usa apenas créditos demonstrativos sem valor de saque. As chances
+                Esta versão usa saldo em R$ sem valor de saque. As chances
                 somadas devem dar 100%.
               </p>
               <form
@@ -1294,7 +1294,7 @@ export default function Admin({
                         />
                       </label>
                       <label className="field">
-                        Preço (créditos)
+                        Preço (R$)
                         <input
                           aria-label={`Preço da raspadinha ${game.name}`}
                           type="number"
@@ -1340,7 +1340,7 @@ export default function Admin({
                           <tr>
                             <th>Imagem do prêmio</th>
                             <th>Nome do prêmio</th>
-                            <th>Créditos</th>
+                            <th>R$</th>
                             <th>Chance (%)</th>
                             <th></th>
                           </tr>
@@ -1379,7 +1379,7 @@ export default function Admin({
                               </td>
                               <td>
                                 <input
-                                  aria-label={`${game.name}: créditos do prêmio ${index + 1}`}
+                                  aria-label={`${game.name}: R$ do prêmio ${index + 1}`}
                                   type="number"
                                   min={0}
                                   max={10000}
@@ -1482,9 +1482,9 @@ export default function Admin({
                       enabled: false,
                       prizes: [
                         { label: 'Não foi desta vez', points: 0, chance: 7000, image: '' },
-                        { label: '25 créditos', points: 25, chance: 2400, image: '' },
-                        { label: '100 créditos', points: 100, chance: 550, image: '' },
-                        { label: '250 créditos', points: 250, chance: 50, image: '' },
+                        { label: '25 R$', points: 25, chance: 2400, image: '' },
+                        { label: '100 R$', points: 100, chance: 550, image: '' },
+                        { label: '250 R$', points: 250, chance: 50, image: '' },
                       ],
                     });
                     setConfig({ ...config, scratch: { ...config.scratch, games } });

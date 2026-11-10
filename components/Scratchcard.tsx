@@ -225,14 +225,14 @@ export default function Scratchcard({
           <Ticket size={16} /> BICHOS VEGAS
         </span>
         <h2>Raspadinha Vegas</h2>
-        <p>Compre com créditos demonstrativos, raspe o cartão e veja na hora o resultado.</p>
+        <p>Compre com saldo, raspe o cartão e veja na hora o resultado.</p>
         <div className="scratch-purchase">
           <span>
             <Coins size={18} /> Escolha um cartão e confira o preço antes de jogar
           </span>
         </div>
         <small>
-          Saldo: {points.toLocaleString('pt-BR')} créditos virtuais · sem valor monetário ou saque.
+          Saldo: R$ {(points / 100).toFixed(2).replace('.', ',')} · sem valor monetário ou saque.
         </small>
         {!config.enabled && !config.games?.some((game) => game.enabled) && (
           <p className="scratch-paused">A raspadinha está temporariamente pausada.</p>
@@ -262,8 +262,7 @@ export default function Scratchcard({
                     <p>{game.tagline}</p>
                   </div>
                   <div className="scratch-game-price">
-                    {game.price}
-                    <small>créditos</small>
+                    <b>R$ {(game.price / 100).toFixed(2).replace('.', ',')}</b>
                   </div>
                 </div>
                 <div className="scratch-game-prize">
@@ -271,7 +270,7 @@ export default function Scratchcard({
                   <b>
                     {game.prizes
                       .filter((prize) => prize.points > 0)
-                      .map((prize) => `${prize.points.toLocaleString('pt-BR')} créditos`)
+                      .map((prize) => `R$ {(prize.points / 100).toFixed(2).replace('.', ',')}`)
                       .join(' · ') || 'Sem prêmios configurados'}
                   </b>
                 </div>
@@ -360,7 +359,7 @@ export default function Scratchcard({
                   }}
                 >
                   <span>♟</span> {busy ? 'Preparando…' : card ? 'Comprar outro' : 'Comprar por'}
-                  <b>{selectedGame.price.toLocaleString('pt-BR')} créditos</b>
+                  <b>{selectedGame.price.toLocaleString('pt-BR')} R$</b>
                 </button>
                 <button
                   className="scratch-lightning"
@@ -375,24 +374,24 @@ export default function Scratchcard({
                 </button>
               </div>
               {card && !revealed && <p className="scratch-progress">Área raspada: {scratchProgress}% · raspe com o mouse ou toque</p>}
-              {card && revealed && <p className="scratch-confirm"><CheckCircle2 size={17} /> Resultado: {card.prize_label} · {card.prize_points.toLocaleString('pt-BR')} créditos virtuais</p>}
+              {card && revealed && <p className="scratch-confirm"><CheckCircle2 size={17} /> Resultado: {card.prize_label} · R$ {(card.prize_points / 100).toFixed(2).replace('.', ',')}</p>}
             </div>
             <div className="scratch-match-right">
               <div className="scratch-promo-banner" style={{ backgroundImage: `linear-gradient(90deg,#251832 0%,#251832cc 48%,#15151544 100%),url("${selectedGame.image || '/scratch-prizes/smartphone.jpg'}")` }}>
                 <b>RASPE 3 SÍMBOLOS IGUAIS</b>
                 <strong>E VEJA SEU PRÊMIO</strong>
-                <small>{selectedGame.name.toUpperCase()} · {selectedGame.price.toLocaleString('pt-BR')} CRÉDITOS</small>
+                <small>{selectedGame.name.toUpperCase()} · R$ {(selectedGame.price / 100).toFixed(2).replace('.', ',')}</small>
               </div>
               <aside className="scratch-instructions">
                 <h2><Ticket size={20} /> {selectedGame.name}</h2>
                 <p>Pressione <kbd>Comprar</kbd> para adquirir sua raspadinha.</p>
                 <p>Raspe os <b>9 quadradinhos</b> usando o dedo ou o mouse.</p>
                 <p>Encontre <b>3 imagens iguais</b> para revelar o prêmio.</p>
-                <small>Saldo: {points.toLocaleString('pt-BR')} créditos virtuais</small>
+                <small>Saldo: R$ {(points / 100).toFixed(2).replace('.', ',')}</small>
               </aside>
               <div className="scratch-prize-note">
                 <b>✦ &nbsp; Prêmios demonstrativos</b>
-                <span>Esta versão credita pontos virtuais. As fotos são ilustrativas e não representam produtos resgatáveis.</span>
+                <span>Esta versão usa saldo demonstrativo. As fotos são ilustrativas e não representam produtos resgatáveis.</span>
               </div>
               {registered && points < selectedGame.price && !card && (
                 <div className="scratch-insufficient">
@@ -413,7 +412,7 @@ export default function Scratchcard({
                   <span>{selectedGame.icon}</span>
                 )}
                   <b>{prize.label}</b>
-                  <small>{prize.points.toLocaleString('pt-BR')} créditos virtuais</small>
+                  <small>R$ {(prize.points / 100).toFixed(2).replace('.', ',')} virtuais</small>
                 </article>
               ))}
             </div>
@@ -441,7 +440,7 @@ export default function Scratchcard({
                 <small>{new Date(item.created_at).toLocaleString('pt-BR')}</small>
               </div>
               <span className="result-number">
-                {item.prize_points ? `+${item.prize_points}` : '—'} créditos
+                {item.prize_points ? `+${item.prize_points}` : '—'} R$
               </span>
             </div>
           ))

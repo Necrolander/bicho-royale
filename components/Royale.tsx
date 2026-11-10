@@ -497,7 +497,7 @@ export default function Royale() {
       const receipts = await api('entries/groups', { ...body, key: rouletteRetry.current!.key });
       rouletteRetry.current = null;
       notify(
-        `Comprovante(s) registrado(s): ${receipts.length} animal(is), ${receipts.length * 10} pontos fictícios utilizados.`,
+        `Comprovante(s) registrado(s): ${receipts.length} animal(is), R$ ${(receipts.length * 10 / 100).toFixed(2).replace('.', ',')} utilizados.`,
       );
     });
   };
@@ -817,7 +817,7 @@ export default function Royale() {
                     <span>
                       <small>{item.isResult ? 'RESULTADO DEMO' : item.game}</small>
                       <b>{item.label}</b>
-                      <em>{item.points.toLocaleString('pt-BR')} créditos virtuais</em>
+                      <em>R$ {(item.points / 100).toFixed(2).replace('.', ',')}</em>
                     </span>
                   </article>
                 ))}
@@ -853,7 +853,7 @@ export default function Royale() {
                 {page === 'roulette'
                   ? 'Gire, veja os bichos premiados e confira as dezenas de cada grupo.'
                   : page === 'scratch'
-                    ? 'Compre seu cartão com créditos virtuais e raspe para revelar o resultado.'
+                    ? 'Compre seu cartão com saldo e raspe para revelar o resultado.'
                     : page === 'deposit'
                       ? 'Acompanhe depósitos e veja as opções disponíveis para sua conta.'
                       : page === 'withdrawal'
@@ -916,7 +916,7 @@ export default function Royale() {
                     <div className="home-hero-copy">
                       <span className="home-kicker"><Sparkles size={14} /> BICHOS VEGAS <i /> EXPERIÊNCIA DEMONSTRATIVA</span>
                       <h1 id="home-headline">A sorte entra em cena.<br /><em>Você escolhe o jogo.</em></h1>
-                      <p>Entre no clima Vegas com a roletinha de 25 animais ou escolha uma raspadinha e descubra o resultado. Tudo em créditos virtuais.</p>
+                      <p>Entre no clima Vegas com a roletinha de 25 animais ou escolha uma raspadinha e descubra o resultado. Tudo em saldo demonstrativo.</p>
                       <div className="home-hero-actions">
                         <button className="primary" onClick={() => navigate('roulette')}>Ir para a roletinha <ArrowRight size={17} /></button>
                         <button className="secondary" onClick={() => navigate('scratch')}>Ver raspadinhas <Ticket size={16} /></button>
@@ -1032,7 +1032,7 @@ export default function Royale() {
                               ? rouletteAnimals.map((id) => animals[id - 1].name).join(', ')
                               : 'Selecione seus animais'}
                           </b>
-                          <span>{rouletteAnimals.length} animal(is) · 10 pontos por animal</span>
+                          <span>{rouletteAnimals.length} animal(is) · R$ 0,10 cada</span>
                         </div>
                         <button
                           className="icon-button"
