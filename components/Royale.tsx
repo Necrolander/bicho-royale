@@ -28,6 +28,8 @@ import {
   Info,
   CheckCircle2,
   LockKeyhole,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { animals, type ModeId } from '@/lib/game';
 import { translations, type Locale } from '@/lib/i18n';
@@ -206,7 +208,8 @@ export default function Royale() {
       id: null,
     }),
     [splash, setSplash] = useState(true),
-    [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    [authMode, setAuthMode] = useState<'login' | 'register'>('login'),
+    [passwordVisible, setPasswordVisible] = useState(false);
   const initialized = useRef(false),
     previousRounds = useRef(new Set<string>());
   const t = translations[prefs.locale];
@@ -487,8 +490,7 @@ export default function Royale() {
               Cadastre-se ou faça login para abrir o painel. Seus dados, bilhetes e movimentações
               ficam vinculados à sua conta.
             </p>
-            {error && <p role="alert">{error}</p>}
-            {toast && <p role="alert">{toast}</p>}
+            {(error || toast) && <p className="auth-feedback" role="alert">{error || toast}</p>}
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -515,14 +517,25 @@ export default function Royale() {
               </label>
               <label className="field">
                 Senha
-                <input
-                  name="password"
-                  type="password"
-                  minLength={10}
-                  maxLength={128}
-                  required
-                  autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                />
+                <span className="auth-password-row">
+                  <input
+                    name="password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    minLength={10}
+                    maxLength={128}
+                    required
+                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                  />
+                  <button
+                    className="auth-password-toggle"
+                    type="button"
+                    aria-label={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
+                    aria-pressed={passwordVisible}
+                    onClick={() => setPasswordVisible((visible) => !visible)}
+                  >
+                    {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </span>
                 <small>Mínimo de 10 caracteres</small>
               </label>
               <button className="primary full" disabled={busy}>
@@ -1227,14 +1240,25 @@ export default function Royale() {
                   </label>
                   <label className="field">
                     Senha
-                    <input
-                      name="password"
-                      type="password"
-                      minLength={10}
-                      maxLength={128}
-                      required
-                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
-                    />
+                    <span className="auth-password-row">
+                      <input
+                        name="password"
+                        type={passwordVisible ? 'text' : 'password'}
+                        minLength={10}
+                        maxLength={128}
+                        required
+                        autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                      />
+                      <button
+                        className="auth-password-toggle"
+                        type="button"
+                        aria-label={passwordVisible ? 'Ocultar senha' : 'Mostrar senha'}
+                        aria-pressed={passwordVisible}
+                        onClick={() => setPasswordVisible((visible) => !visible)}
+                      >
+                        {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </span>
                     <small>Mínimo de 10 caracteres</small>
                   </label>
                   <button className="primary full" disabled={busy} type="submit">
