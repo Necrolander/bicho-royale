@@ -84,11 +84,12 @@ async function readJson(req: Request, maxBytes = 16000): Promise<unknown> {
 }
 async function handler(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   try {
-    initialize();
-    startScheduler();
     const path = (await params).path.join('/'),
       url = new URL(req.url),
       post = req.method === 'POST';
+    if (path === 'health' && !post) return json({ ok: true, time: Date.now() });
+    initialize();
+    startScheduler();
     let payload: unknown;
     if (post) {
       const origin = req.headers.get('origin');
@@ -112,7 +113,6 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       payload = await readJson(req, maxBytes);
     }
     advanceRounds();
-    if (path === 'health' && !post) return json({ ok: true, time: Date.now() });
     if (path === 'events' && !post) {
       await currentUser();
       let timer: ReturnType<typeof setInterval>;

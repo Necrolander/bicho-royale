@@ -19,8 +19,8 @@ const globalPg = globalThis as unknown as {
 const databaseUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const cloudEnabled = () => Boolean(databaseUrl() || process.env.DATABASE_PASSWORD);
 class DatabaseQueryTimeoutError extends Error {
-  constructor() {
-    super('Database query timed out');
+  constructor(statement: string) {
+    super(`Database query timed out: ${statement.slice(0, 180)}`);
     this.name = 'DatabaseQueryTimeoutError';
   }
 }
@@ -54,7 +54,7 @@ function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
     globalPg.royaleWorker = undefined;
     globalPg.royaleBuffer = undefined;
     void stuckWorker?.terminate();
-    throw new DatabaseQueryTimeoutError();
+    throw new DatabaseQueryTimeoutError(sql);
   }
   const result = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 8, Atomics.load(state, 1))));
   if (result.error) throw new Error(result.error);
