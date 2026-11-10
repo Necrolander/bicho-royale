@@ -44,6 +44,7 @@ import {
 } from '@/lib/mercadopago';
 import { createWithdrawal, listUserWithdrawals, listAllWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
 import { defaultScratchConfig, pickScratchPrize } from '@/lib/scratchcards';
+import { isValidCpf, normalizeCpf } from '@/lib/cpf';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const entrySchema = z.object({
@@ -167,12 +168,13 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         })
         .parse(payload);
       const email = body.email.toLowerCase();
-      const cpfClean = body.cpf?.replace(/\D/g, '');
+      const cpfClean = body.cpf ? normalizeCpf(body.cpf) : undefined;
       rateLimit(`auth:${sha256(email)}`, 8, 15 * 60000);
       rateLimit('auth:global', 100, 60000);
       let user;
       if (path === 'auth/register') {
         if (!body.name) throw new ApiError(400, 'Informe seu nome');
+        if (!cpfClean || !isValidCpf(cpfClean)) throw new ApiError(400, 'Informe um CPF válido');
         if (one('SELECT id FROM users WHERE email=?', email))
           throw new ApiError(409, 'E-mail já cadastrado');
         if (cpfClean && one('SELECT id FROM users WHERE cpf=?', cpfClean))
@@ -445,7 +447,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const user = (await currentUser())!;
       const input = z.object({
         amountCents: z.number().int().min(100).max(100000),
-        cpf: z.string().min(11).max(14),
+        cpf: z.string().min(11).max(14).optional(),
         pixKey: z.string().max(200).optional(),
       }).parse(payload);
       return json(await createWithdrawal({ userId: String(user.id), ...input }), 201);

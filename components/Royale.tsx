@@ -539,6 +539,7 @@ export default function Royale() {
                 void act(async () => {
                   await api(`auth/${authMode}`, {
                     name: values.get('name') || undefined,
+                    cpf: values.get('cpf') || undefined,
                     email: values.get('email'),
                     password: values.get('password'),
                   });
@@ -547,10 +548,34 @@ export default function Royale() {
               }}
             >
               {authMode === 'register' && (
-                <label className="field">
-                  Nome
-                  <input name="name" minLength={2} maxLength={60} required autoComplete="name" />
-                </label>
+                <>
+                  <label className="field">
+                    Nome
+                    <input name="name" minLength={2} maxLength={60} required autoComplete="name" />
+                  </label>
+                  <label className="field">
+                    CPF vinculado à conta
+                    <input
+                      name="cpf"
+                      type="text"
+                      inputMode="numeric"
+                      minLength={14}
+                      maxLength={14}
+                      required
+                      autoComplete="off"
+                      placeholder="000.000.000-00"
+                      onInput={(event) => {
+                        const input = event.currentTarget;
+                        const digits = input.value.replace(/\D/g, '').slice(0, 11);
+                        input.value = digits
+                          .replace(/(\d{3})(\d)/, '$1.$2')
+                          .replace(/(\d{3})(\d)/, '$1.$2')
+                          .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                      }}
+                    />
+                    <small>Será salvo no seu perfil e usado para identificar sua conta.</small>
+                  </label>
+                </>
               )}
               <label className="field">
                 E-mail

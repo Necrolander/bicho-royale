@@ -15,7 +15,6 @@ type Withdrawal = {
 
 export default function WithdrawalScreen({ balance, registered }: { balance: number; registered: boolean }) {
   const [amount, setAmount] = useState('');
-  const [cpf, setCpf] = useState('');
   const [pixKey, setPixKey] = useState('');
   const [items, setItems] = useState<Withdrawal[]>([]);
   const [busy, setBusy] = useState(false);
@@ -34,30 +33,18 @@ export default function WithdrawalScreen({ balance, registered }: { balance: num
   };
   useEffect(() => { if (registered) void load(); }, [registered]);
 
-  const formatCpf = (value: string) => {
-    const nums = value.replace(/\D/g, '').slice(0, 11);
-    return nums.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
-
   const create = async () => {
     const cents = Math.round(Number(amount.replace(',', '.')) * 100);
-    const cpfClean = cpf.replace(/\D/g, '');
     if (!Number.isInteger(cents) || cents < 100 || cents > 100000) {
       setMessage('Informe um valor de R$ 1,00 a R$ 1.000,00.'); return;
     }
     if (cents > balance) {
       setMessage(`Saldo insuficiente. Seu saldo é R$ ${(balance/100).toFixed(2).replace('.', ',')}.`); return;
     }
-    if (cpfClean.length !== 11) {
-      setMessage('CPF deve ter 11 dígitos.'); return;
-    }
-    if (!userCpf || cpfClean !== userCpf.replace(/\D/g, '')) {
-      setMessage('CPF informado não confere com o cadastrado no perfil.'); return;
-    }
     setBusy(true); setMessage('');
     try {
-      await api('withdrawals', { amountCents: cents, cpf: cpfClean, pixKey: pixKey || undefined });
-      setAmount(''); setCpf(''); setPixKey('');
+      await api('withdrawals', { amountCents: cents, pixKey: pixKey || undefined });
+      setAmount(''); setPixKey('');
       await load();
       setMessage('Solicitação de saque enviada! Aguarde aprovação do administrador.');
     } catch (error) { setMessage((error as Error).message); }
@@ -74,8 +61,7 @@ export default function WithdrawalScreen({ balance, registered }: { balance: num
           <b>R$ {(balance / 100).toFixed(2).replace('.', ',')}</b>
         </div>
         <label className="field">Valor do saque<input type="number" min="1" max="1000" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10.00" /></label>
-        <label className="field">CPF (cadastrado no perfil)<input type="text" value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} disabled={!!userCpf} /></label>
-        {userCpf && <p style={{fontSize: '0.85rem', color: 'var(--muted)'}}>CPF do perfil: {userCpf}</p>}
+        <p style={{fontSize: '0.85rem', color: 'var(--muted)'}}>{userCpf ? `CPF vinculado ao perfil: ${userCpf}` : 'Cadastre seu CPF no perfil para solicitar saque.'}</p>
         <label className="field">Chave Pix (opcional, padrão: CPF)<input type="text" value={pixKey} onChange={(e) => setPixKey(e.target.value)} placeholder="CPF, e-mail, telefone ou aleatória" /></label>
         <button className="primary full" disabled={busy} onClick={() => void create()}>
           {busy ? 'Enviando...' : 'Solicitar saque via Pix'}

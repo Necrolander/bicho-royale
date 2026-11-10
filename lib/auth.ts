@@ -22,11 +22,12 @@ export function passwordMatches(password: string, hash: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 export function publicUser(user: Row) {
+  const cpf = String(user.cpf || '').replace(/\D/g, '');
   return {
     id: user.id,
     name: user.name,
     fullName: user.full_name,
-    cpf: user.cpf,
+    cpf: cpf.length === 11 ? `***.***.***-${cpf.slice(-2)}` : null,
     email: user.email,
     role: user.role,
     points: user.points,

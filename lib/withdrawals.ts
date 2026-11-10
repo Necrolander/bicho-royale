@@ -20,7 +20,7 @@ export type Withdrawal = {
 export type CreateWithdrawalInput = {
   userId: string;
   amountCents: number;
-  cpf: string;
+  cpf?: string;
   pixKey?: string;
 };
 
@@ -31,7 +31,7 @@ export async function createWithdrawal(input: CreateWithdrawalInput) {
   if (!user) throw new ApiError(404, 'Usuário não encontrado');
   if (user.blocked) throw new ApiError(403, 'Conta bloqueada');
   if (!user.cpf) throw new ApiError(400, 'CPF não cadastrado no perfil');
-  if (input.cpf.replace(/\D/g, '') !== user.cpf.replace(/\D/g, ''))
+  if (input.cpf && input.cpf.replace(/\D/g, '') !== user.cpf.replace(/\D/g, ''))
     throw new ApiError(400, 'CPF informado não confere com o cadastro');
   if (Number(user.points) < input.amountCents) throw new ApiError(400, 'Saldo insuficiente');
   if (input.amountCents < 100) throw new ApiError(400, 'Valor mínimo: R$ 1,00');
