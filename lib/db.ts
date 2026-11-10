@@ -18,6 +18,12 @@ const globalPg = globalThis as unknown as {
 // the primary URL too, so connecting the integration is enough to enable Postgres.
 const databaseUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const cloudEnabled = () => Boolean(databaseUrl() || process.env.DATABASE_PASSWORD);
+class DatabaseQueryTimeoutError extends Error {
+  constructor() {
+    super('Database query timed out');
+    this.name = 'DatabaseQueryTimeoutError';
+  }
+}
 function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
   if (!globalPg.royaleWorker) {
     globalPg.royaleWorker = new Worker(new URL('./pg-worker.mjs', import.meta.url), {
@@ -40,8 +46,16 @@ function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
   Atomics.store(state, 0, 0);
   Atomics.store(state, 1, 0);
   globalPg.royaleWorker.postMessage({ buffer, statement: sql, params });
-  if (Atomics.wait(state, 0, 0, 30000) === 'timed-out')
-    throw new Error('Database query timed out');
+  if (Atomics.wait(state, 0, 0, 15000) === 'timed-out') {
+    // A worker that did not answer can no longer safely share the response
+    // buffer. Terminate it so its Postgres connection is released and the next
+    // request gets a clean worker instead of waiting behind a stuck query.
+    const stuckWorker = globalPg.royaleWorker;
+    globalPg.royaleWorker = undefined;
+    globalPg.royaleBuffer = undefined;
+    void stuckWorker?.terminate();
+    throw new DatabaseQueryTimeoutError();
+  }
   const result = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 8, Atomics.load(state, 1))));
   if (result.error) throw new Error(result.error);
   return result.rows;
@@ -213,7 +227,7 @@ export function transaction<T>(fn: () => T): T {
       cloudQuery('COMMIT', []);
       return value;
     } catch (error) {
-      cloudQuery('ROLLBACK', []);
+      if (!(error instanceof DatabaseQueryTimeoutError)) cloudQuery('ROLLBACK', []);
       throw error;
     } finally { globalPg.royaleDepth = 0; }
   }
