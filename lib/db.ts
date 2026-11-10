@@ -14,12 +14,15 @@ const globalPg = globalThis as unknown as {
   royaleDepth?: number;
   royaleBuffer?: SharedArrayBuffer;
 };
-const cloudEnabled = () => Boolean(process.env.DATABASE_URL || process.env.DATABASE_PASSWORD);
+// Supabase's Vercel integration exposes POSTGRES_URL by default. Accept it as
+// the primary URL too, so connecting the integration is enough to enable Postgres.
+const databaseUrl = () => process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const cloudEnabled = () => Boolean(databaseUrl() || process.env.DATABASE_PASSWORD);
 function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
   if (!globalPg.royaleWorker) {
     globalPg.royaleWorker = new Worker(new URL('./pg-worker.mjs', import.meta.url), {
       workerData: {
-        url: process.env.DATABASE_URL,
+        url: databaseUrl(),
         password: process.env.DATABASE_PASSWORD,
         host: process.env.DATABASE_HOST,
         user: process.env.DATABASE_USER,

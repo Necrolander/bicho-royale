@@ -281,7 +281,7 @@ export function enterGroupBatch(userId: string, input: Parameters<typeof createE
 }
 const runtime = globalThis as unknown as { royaleTimer?: ReturnType<typeof setInterval> };
 export function startScheduler() {
-  if (process.env.DATABASE_URL || process.env.DATABASE_PASSWORD) {
+  if (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_PASSWORD) {
     return;
   }
   if (!runtime.royaleTimer) {
