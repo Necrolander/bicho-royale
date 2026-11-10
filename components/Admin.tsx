@@ -88,6 +88,9 @@ type MPDeposit = {
   created_at: string;
   confirmed_at: string | null;
   payment_id: string | null;
+  qr_code?: string;
+  qr_code_base64?: string;
+  ticket_url?: string;
   name: string;
   email: string | null;
 };
@@ -810,6 +813,7 @@ export default function Admin({
                         <th>Método</th>
                         <th>Status</th>
                         <th>Referência</th>
+                        <th>PIX / Boleto</th>
                         <th>Confirmação</th>
                         <th>Ação</th>
                       </tr>
@@ -841,12 +845,29 @@ export default function Admin({
                             <code title={deposit.external_reference}>{deposit.external_reference.slice(0, 12)}…</code>
                           </td>
                           <td>
+                            {deposit.qr_code_base64 && (
+                              <img src={`data:image/png;base64,${deposit.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 120, cursor: 'pointer' }} onClick={() => window.open(deposit.ticket_url || '', '_blank')} />
+                            )}
+                            {deposit.qr_code && !deposit.qr_code_base64 && (
+                              <div style={{ maxWidth: 200 }}>
+                                <textarea readOnly value={deposit.qr_code} rows={2} style={{ width: '100%', fontSize: '0.7rem' }} />
+                                <button className="secondary" style={{ fontSize: '0.7rem', marginTop: 4 }} onClick={() => navigator.clipboard.writeText(deposit.qr_code || '')}>Copiar</button>
+                              </div>
+                            )}
+                            {deposit.ticket_url && !deposit.qr_code_base64 && !deposit.qr_code && (
+                              <a href={deposit.ticket_url} target="_blank" rel="noopener noreferrer" className="text-link">Ver boleto</a>
+                            )}
+                            {!deposit.qr_code_base64 && !deposit.qr_code && !deposit.ticket_url && deposit.init_point && (
+                              <a href={deposit.init_point} target="_blank" rel="noopener noreferrer" className="text-link">Checkout Pro</a>
+                            )}
+                          </td>
+                          <td>
                             {deposit.confirmed_at
                               ? new Date(deposit.confirmed_at).toLocaleString('pt-BR')
                               : '—'}
                           </td>
                           <td>
-                            {deposit.status === 'PENDING' && (
+                            {(deposit.status === 'PENDING' || deposit.status === 'CREATING') && (
                               <button
                                 className="secondary"
                                 disabled={busy}

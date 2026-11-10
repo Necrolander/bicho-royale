@@ -35,7 +35,7 @@ import {
   testEfiConnection,
 } from '@/lib/efi';
 import {
-  createMercadoPagoDeposit,
+  createMercadoPagoPayment,
   mercadoPagoStatus,
   refreshMercadoPagoDeposit,
   refreshMercadoPagoDepositAsAdmin,
@@ -232,8 +232,25 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const email = String(user.email);
       if (!email) throw new ApiError(403, 'Crie uma conta com e-mail para solicitar um pagamento Mercado Pago');
       rateLimit(`mp:${user.id}`, 3, 3600000);
-      const input = z.object({ amountCents: z.number().int().min(100).max(100000), paymentMethod: z.enum(['pix', 'credit_card', 'boleto']).default('pix') }).parse(payload);
-      return json(await createMercadoPagoDeposit(String(user.id), input.amountCents, input.paymentMethod, email), 201);
+      const input = z.object({
+        amountCents: z.number().int().min(100).max(100000),
+        paymentMethod: z.enum(['pix', 'credit_card', 'boleto']).default('pix'),
+        token: z.string().optional(),
+        installments: z.number().int().min(1).max(12).optional(),
+        issuerId: z.string().optional(),
+        identificationType: z.string().optional(),
+        identificationNumber: z.string().optional(),
+      }).parse(payload);
+      return json(await createMercadoPagoPayment(
+        String(user.id),
+        input.amountCents,
+        input.paymentMethod,
+        email,
+        input.token,
+        input.installments,
+        input.issuerId,
+        input.identificationType && input.identificationNumber ? { type: input.identificationType, number: input.identificationNumber } : undefined
+      ), 201);
     }
     if (path === 'mercadopago/refresh' && post) {
       const user = (await currentUser())!;
@@ -661,7 +678,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       if (path === 'admin/mercadopago-deposits' && !post)
         return json(
           all(
-            'SELECT p.id,p.external_reference,p.amount_cents,p.payment_method,p.status,p.created_at,p.confirmed_at,p.payment_id,u.name,u.email FROM mercadopago_deposits p JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 200',
+            'SELECT p.id,p.external_reference,p.amount_cents,p.payment_method,p.status,p.created_at,p.confirmed_at,p.payment_id,p.qr_code,p.qr_code_base64,p.ticket_url,u.name,u.email FROM mercadopago_deposits p JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 200',
           ),
         );
       if (path === 'admin/mercadopago-refresh' && post) {

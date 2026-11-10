@@ -2,9 +2,24 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from './Royale';
+import MercadoPagoCheckout from './MercadoPagoCheckout';
 
 type PixDeposit = { id: string; txid: string; amount_cents: number; amountCents?: number; status: string; copy_paste?: string; copyPaste?: string; created_at?: string };
-type MPDeposit = { id: string; external_reference: string; amount_cents: number; payment_method: string; status: string; init_point?: string; sandbox_init_point?: string; created_at?: string; confirmed_at?: string };
+type MPDeposit = {
+  id: string;
+  external_reference: string;
+  amount_cents: number;
+  payment_method: string;
+  status: string;
+  init_point?: string;
+  sandbox_init_point?: string;
+  created_at?: string;
+  confirmed_at?: string;
+  qr_code?: string;
+  qr_code_base64?: string;
+  ticket_url?: string;
+  payment_id?: string;
+};
 
 export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { pixEnabled: boolean; mpEnabled: boolean; registered: boolean }) {
   const [amount, setAmount] = useState('10.00');
@@ -13,11 +28,18 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'pix' | 'mp'>('pix');
+  const [showMPCheckout, setShowMPCheckout] = useState(false);
+  const [selectedMPMethod, setSelectedMPMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
+  const [userEmail, setUserEmail] = useState('');
 
   const load = async () => {
     try {
       if (pixEnabled) setPixItems(await api('pix/deposits'));
       if (mpEnabled) setMpItems(await api('mercadopago/deposits'));
+
+      // Get user email for MP payments
+      const user = await api('bootstrap');
+      if (user.user?.email) setUserEmail(user.user.email);
     } catch (error) { setMessage((error as Error).message); }
   };
   useEffect(() => { if (registered) void load(); }, [registered, pixEnabled, mpEnabled]);
@@ -33,15 +55,27 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
     finally { setBusy(false); }
   };
 
-  const createMP = async (paymentMethod: 'pix' | 'credit_card' | 'boleto' = 'pix') => {
+  const openMPCheckout = (paymentMethod: 'pix' | 'credit_card' | 'boleto') => {
     const cents = Math.round(Number(amount.replace(',', '.')) * 100);
     if (!Number.isInteger(cents) || cents < 100 || cents > 100000) {
       setMessage('Informe um valor de R$ 1,00 a R$ 1.000,00.'); return;
     }
-    setBusy(true); setMessage('');
-    try { await api('mercadopago/deposits', { amountCents: cents, paymentMethod }); await load(); }
-    catch (error) { setMessage((error as Error).message); }
-    finally { setBusy(false); }
+    setSelectedMPMethod(paymentMethod);
+    setShowMPCheckout(true);
+  };
+
+  const handleMPSuccess = async (result: any) => {
+    setShowMPCheckout(false);
+    await load();
+    setMessage('Pagamento aprovado! Créditos adicionados.');
+  };
+
+  const handleMPError = (error: string) => {
+    setMessage(error);
+  };
+
+  const handleMPClose = () => {
+    setShowMPCheckout(false);
   };
 
   const refreshPix = async (id: string) => {
@@ -72,13 +106,13 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
         )}
         {mpEnabled && (
           <div style={{ marginTop: 8 }}>
-            <button className="primary" disabled={busy || activeTab !== 'mp'} onClick={() => void createMP('pix')}>
+            <button className="primary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('pix')}>
               Pagar com Mercado Pago (Pix)
             </button>
-            <button className="secondary" disabled={busy || activeTab !== 'mp'} onClick={() => void createMP('credit_card')}>
+            <button className="secondary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('credit_card')}>
               Pagar com Mercado Pago (Cartão)
             </button>
-            <button className="secondary" disabled={busy || activeTab !== 'mp'} onClick={() => void createMP('boleto')}>
+            <button className="secondary" disabled={busy || activeTab !== 'mp' || showMPCheckout} onClick={() => void openMPCheckout('boleto')}>
               Pagar com Mercado Pago (Boleto)
             </button>
           </div>
@@ -110,13 +144,34 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
         );
       } else {
         const mp = item as MPDeposit;
+        const isPending = mp.status === 'PENDING' || mp.status === 'CREATING';
+
         return (
           <div className="deposit-item" key={item.id}>
             <b>R$ {((mp.amount_cents || 0) / 100).toFixed(2).replace('.', ',')}</b>
             <span>{mp.status} · {mp.payment_method}</span>
-            {mp.status === 'PENDING' && mp.init_point && <>
+            {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
+              {mp.qr_code_base64 && (
+                <div style={{ marginTop: 8, textAlign: 'center' }}>
+                  <img src={`data:image/png;base64,${mp.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 200 }} />
+                </div>
+              )}
+              {mp.qr_code && !mp.qr_code_base64 && (
+                <div style={{ marginTop: 8 }}>
+                  <textarea readOnly value={mp.qr_code} rows={3} style={{ width: '100%' }} />
+                  <button className="secondary" onClick={() => void navigator.clipboard.writeText(mp.qr_code)}>Copiar código PIX</button>
+                </div>
+              )}
+              {mp.ticket_url && (
+                <a href={mp.ticket_url} target="_blank" rel="noopener noreferrer" className="primary" style={{ display: 'inline-block', marginTop: 8 }}>
+                  Ver comprovante
+                </a>
+              )}
+              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}>Verificar pagamento</button>
+            </>}
+            {isPending && !mp.qr_code && !mp.qr_code_base64 && !mp.ticket_url && mp.init_point && <>
               <a href={mp.init_point} target="_blank" rel="noopener noreferrer" className="primary" style={{ display: 'inline-block', marginTop: 8 }}>
-                Acessar pagamento
+                Acessar pagamento (Checkout Pro)
               </a>
               <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}>Verificar pagamento</button>
             </>}
@@ -143,5 +198,25 @@ export default function DepositScreen({ pixEnabled, mpEnabled, registered }: { p
       <h2>Acompanhe a confirmação</h2>
       {renderDepositList()}
     </section>
+
+    {showMPCheckout && userEmail && (
+      <MercadoPagoCheckout
+        amountCents={Math.round(Number(amount.replace(',', '.')) * 100)}
+        paymentMethod={selectedMPMethod}
+        payerEmail={userEmail}
+        onSuccess={handleMPSuccess}
+        onError={handleMPError}
+        onClose={handleMPClose}
+      />
+    )}
+    {showMPCheckout && !userEmail && (
+      <div className="mp-checkout-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div className="surface" style={{ padding: 24, borderRadius: 8, maxWidth: 400 }}>
+          <h3>E-mail necessário</h3>
+          <p>Você precisa ter uma conta com e-mail cadastrado para usar o Mercado Pago.</p>
+          <button className="primary" onClick={handleMPClose}>OK</button>
+        </div>
+      </div>
+    )}
   </div>;
 }

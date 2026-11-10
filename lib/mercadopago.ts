@@ -10,6 +10,28 @@ export type MercadoPagoConfig = {
   environment: 'sandbox' | 'production';
 };
 
+export type CreatePaymentResult = {
+  id: string;
+  externalReference: string;
+  amountCents: number;
+  status: string;
+  paymentMethod: string;
+  // Checkout Transparente fields
+  qrCode?: string;
+  qrCodeBase64?: string;
+  ticketUrl?: string;
+  pointOfInteraction?: {
+    transactionData?: {
+      qrCode?: string;
+      qrCodeBase64?: string;
+      ticketUrl?: string;
+    };
+  };
+  // For card payments
+  statusDetail?: string;
+  dateApproved?: string;
+};
+
 function mpKey() {
   const value = Buffer.from(process.env.MERCADOPAGO_CONFIG_KEY || '', 'base64');
   if (value.length !== 32) throw new ApiError(503, 'Chave de proteção Mercado Pago não configurada no servidor');
@@ -69,7 +91,7 @@ function mpRequest(config: MercadoPagoConfig, method: string, path: string, body
       response.on('end', () => {
         try {
           const json = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
-          if ((response.statusCode || 500) >= 400) reject(new ApiError(502, `Mercado Pago recusou a solicitação (${response.statusCode})`));
+          if ((response.statusCode || 500) >= 400) reject(new ApiError(502, `Mercado Pago recusou a solicitação (${response.statusCode}): ${JSON.stringify(json)}`));
           else resolve(json);
         } catch { reject(new ApiError(502, 'Resposta Mercado Pago inválida')); }
       });
@@ -91,45 +113,94 @@ function requirePayments() {
     throw new ApiError(503, 'Depósitos Mercado Pago ainda não estão habilitados');
 }
 
-export async function createMercadoPagoDeposit(userId: string, amountCents: number, paymentMethod: 'pix' | 'credit_card' | 'boleto' = 'pix', payerEmail?: string) {
+function mapPaymentMethod(method: 'pix' | 'credit_card' | 'boleto'): string {
+  switch (method) {
+    case 'pix': return 'pix';
+    case 'credit_card': return 'credit_card';
+    case 'boleto': return 'bolbradesco';
+    default: return 'pix';
+  }
+}
+
+export async function createMercadoPagoPayment(
+  userId: string,
+  amountCents: number,
+  paymentMethod: 'pix' | 'credit_card' | 'boleto',
+  payerEmail: string,
+  token?: string, // Token do cartão (checkout transparente)
+  installments?: number,
+  issuerId?: string,
+  payerIdentification?: { type: string; number: string }
+): Promise<CreatePaymentResult> {
   requirePayments();
   const config = loadConfig();
   const id = randomUUID();
   const externalReference = randomUUID();
+  const mpPaymentMethod = mapPaymentMethod(paymentMethod);
+
   transaction(() => {
     run('INSERT INTO mercadopago_deposits VALUES(?,?,?,?,?,?,?,?,?,?)', id, userId, externalReference, amountCents, paymentMethod.toUpperCase(), 'CREATING', null, new Date().toISOString(), null, null);
     audit(userId, 'MP_DEPOSIT_REQUESTED', { id, externalReference, amountCents, paymentMethod });
   });
+
   try {
-    let preferenceData: Record<string, unknown>;
-    if (paymentMethod === 'pix') {
-      preferenceData = {
-        items: [{ title: 'Bichos Vegas - Créditos', quantity: 1, unit_price: amountCents / 100, currency_id: 'BRL' }],
-        payer: { email: payerEmail || 'test@test.com' },
-        payment_methods: { excluded_payment_types: [{ id: 'credit_card' }, { id: 'boleto' }], installments: 1 },
-        external_reference: externalReference,
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/mercadopago`,
-        back_urls: { success: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/sucesso`, failure: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/falha`, pending: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/pendente` },
-        auto_return: 'approved',
-      };
-    } else {
-      preferenceData = {
-        items: [{ title: 'Bichos Vegas - Créditos', quantity: 1, unit_price: amountCents / 100, currency_id: 'BRL' }],
-        payer: { email: payerEmail || 'test@test.com' },
-        external_reference: externalReference,
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/mercadopago`,
-        back_urls: { success: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/sucesso`, failure: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/falha`, pending: `${process.env.NEXT_PUBLIC_APP_URL}/deposito/pendente` },
-        auto_return: 'approved',
-      };
+    const paymentData: Record<string, unknown> = {
+      transaction_amount: amountCents / 100,
+      payment_method_id: mpPaymentMethod,
+      external_reference: externalReference,
+      notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/mercadopago`,
+      payer: {
+        email: payerEmail,
+        ...(payerIdentification ? { identification: payerIdentification } : {}),
+      },
+      // Para PIX e boleto, não precisa de token
+      ...(token ? { token } : {}),
+      ...(installments ? { installments } : {}),
+      ...(issuerId ? { issuer_id: issuerId } : {}),
+    };
+
+    // Para cartão, adicionar campos extras se necessário
+    if (paymentMethod === 'credit_card' && token) {
+      paymentData.token = token;
     }
-    const response = await mpRequest(config, 'POST', '/checkout/preferences', preferenceData);
-    const initPoint = response.init_point as string;
-    const sandboxInitPoint = response.sandbox_init_point as string;
+
+    const response = await mpRequest(config, 'POST', '/payments', paymentData);
+
+    const result: CreatePaymentResult = {
+      id,
+      externalReference,
+      amountCents,
+      status: response.status as string,
+      paymentMethod: paymentMethod.toUpperCase(),
+      qrCode: (response.point_of_interaction?.transaction_data?.qr_code as string) || undefined,
+      qrCodeBase64: (response.point_of_interaction?.transaction_data?.qr_code_base64 as string) || undefined,
+      ticketUrl: (response.point_of_interaction?.transaction_data?.ticket_url as string) || undefined,
+      statusDetail: response.status_detail as string,
+      dateApproved: response.date_approved as string,
+    };
+
+    // Atualiza deposit com dados do pagamento
+    const updateFields: Record<string, unknown> = {
+      status: response.status,
+      payment_id: String(response.id),
+    };
+
+    if (response.status === 'approved') {
+      updateFields.confirmed_at = new Date().toISOString();
+    }
+
+    if (result.qrCode) updateFields.qr_code = result.qrCode;
+    if (result.qrCodeBase64) updateFields.qr_code_base64 = result.qrCodeBase64;
+    if (result.ticketUrl) updateFields.ticket_url = result.ticketUrl;
+
     transaction(() => {
-      run('UPDATE mercadopago_deposits SET status=?,init_point=?,sandbox_init_point=? WHERE id=?', 'PENDING', initPoint, sandboxInitPoint, id);
-      audit(userId, 'MP_DEPOSIT_CREATED', { id, externalReference });
+      const setClause = Object.keys(updateFields).map(k => `${k}=?`).join(',');
+      const values = [...Object.values(updateFields), id];
+      run(`UPDATE mercadopago_deposits SET ${setClause} WHERE id=?`, ...values);
+      audit(userId, 'MP_DEPOSIT_CREATED', { id, externalReference, mpPaymentId: response.id, status: response.status });
     });
-    return { id, externalReference, amountCents, status: 'PENDING', initPoint, sandboxInitPoint };
+
+    return result;
   } catch (error) {
     transaction(() => {
       run('UPDATE mercadopago_deposits SET status=? WHERE id=?', 'ERROR', id);
@@ -142,22 +213,45 @@ export async function createMercadoPagoDeposit(userId: string, amountCents: numb
 export async function refreshMercadoPagoDeposit(userId: string, id: string) {
   const row = one('SELECT * FROM mercadopago_deposits WHERE id=? AND user_id=?', id, userId);
   if (!row) throw new ApiError(404, 'Depósito não encontrado');
-  if (row.status !== 'PENDING') return { id, status: row.status, amountCents: row.amount_cents, initPoint: row.init_point };
+  if (row.status !== 'PENDING' && row.status !== 'CREATING') return { id, status: row.status, amountCents: row.amount_cents, qrCode: row.qr_code, qrCodeBase64: row.qr_code_base64, ticketUrl: row.ticket_url };
+
   const config = loadConfig();
-  const response = await mpRequest(config, 'GET', `/payments/search`, undefined);
-  const payments = (response.results as Array<Record<string, unknown>>) || [];
-  const payment = payments.find(p => p.external_reference === row.external_reference);
-  if (payment && payment.status === 'approved') {
-    const paidCents = Math.round(Number(payment.transaction_amount) * 100);
-    if (paidCents !== Number(row.amount_cents))
-      throw new ApiError(502, 'Valor do pagamento divergente');
-    transaction(() => {
-      if (one('SELECT status FROM mercadopago_deposits WHERE id=?', id)?.status !== 'PENDING') return;
-      run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), id);
-      audit(userId, 'MP_DEPOSIT_CONFIRMED', { id, externalReference: row.external_reference, amountCents: paidCents });
-    });
+  const paymentId = row.payment_id;
+  if (!paymentId) {
+    // Buscar por external_reference se não tem payment_id
+    const response = await mpRequest(config, 'GET', `/payments/search?external_reference=${row.external_reference}`);
+    const payments = (response.results as Array<Record<string, unknown>>) || [];
+    const payment = payments.find(p => p.external_reference === row.external_reference);
+    if (payment) return processPaymentResponse(userId, id, payment);
+    return { id, status: row.status, amountCents: row.amount_cents, qrCode: row.qr_code, qrCodeBase64: row.qr_code_base64, ticketUrl: row.ticket_url };
   }
-  return { id, status: one('SELECT status FROM mercadopago_deposits WHERE id=?', id)?.status, amountCents: row.amount_cents, initPoint: row.init_point };
+
+  const response = await mpRequest(config, 'GET', `/payments/${paymentId}`);
+  return processPaymentResponse(userId, id, response);
+}
+
+async function processPaymentResponse(userId: string, depositId: string, payment: Record<string, unknown>) {
+  if (payment.status === 'approved' && payment.external_reference) {
+    const paidCents = Math.round(Number(payment.transaction_amount) * 100);
+    const row = one('SELECT * FROM mercadopago_deposits WHERE id=?', depositId);
+    if (row && paidCents === Number(row.amount_cents)) {
+      transaction(() => {
+        if (one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status !== 'PENDING' && one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status !== 'CREATING') return;
+        run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), depositId);
+        audit(userId, 'MP_DEPOSIT_CONFIRMED', { id: depositId, externalReference: String(payment.external_reference), amountCents: paidCents });
+      });
+    }
+  }
+  const updated = one('SELECT * FROM mercadopago_deposits WHERE id=?', depositId);
+  return {
+    id: depositId,
+    status: updated?.status,
+    amountCents: updated?.amount_cents,
+    qrCode: updated?.qr_code,
+    qrCodeBase64: updated?.qr_code_base64,
+    ticketUrl: updated?.ticket_url,
+    paymentId: updated?.payment_id,
+  };
 }
 
 export async function refreshMercadoPagoDepositAsAdmin(adminId: string, id: string) {
@@ -175,11 +269,11 @@ export async function handleMercadoPagoWebhook(topic: string, resourceId: string
     const payment = response as Record<string, unknown>;
     if (payment.status === 'approved' && payment.external_reference) {
       const row = one('SELECT * FROM mercadopago_deposits WHERE external_reference=?', String(payment.external_reference));
-      if (row && row.status === 'PENDING') {
+      if (row && (row.status === 'PENDING' || row.status === 'CREATING')) {
         const paidCents = Math.round(Number(payment.transaction_amount) * 100);
         if (paidCents === Number(row.amount_cents)) {
           transaction(() => {
-            if (one('SELECT status FROM mercadopago_deposits WHERE id=?', String(row.id))?.status !== 'PENDING') return;
+            if (one('SELECT status FROM mercadopago_deposits WHERE id=?', String(row.id))?.status !== 'PENDING' && one('SELECT status FROM mercadopago_deposits WHERE id=?', String(row.id))?.status !== 'CREATING') return;
             run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), String(row.id));
             audit(String(row.user_id), 'MP_DEPOSIT_CONFIRMED', { id: String(row.id), externalReference: String(row.external_reference), amountCents: paidCents });
           });
