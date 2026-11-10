@@ -112,7 +112,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         throw new ApiError(413, 'Solicitação muito grande');
       payload = await readJson(req, maxBytes);
     }
-    advanceRounds();
+    // Bootstrap only reads account and display data. Running round transitions
+    // here made every page load contend for the global Postgres transaction
+    // lock; mutations and admin/game routes still advance the round lifecycle.
+    if (path !== 'bootstrap' && path !== 'events') advanceRounds();
     if (path === 'events' && !post) {
       await currentUser();
       let timer: ReturnType<typeof setInterval>;

@@ -63,6 +63,13 @@ function cloudQuery(sql: string, params: (string | number | null)[]): Row[] {
 export function initialize() {
   if (!cloudEnabled() || globalPg.royaleReady) return;
   if (cloudEnabled()) {
+    // Most Vercel invocations are fresh isolates. Once the database has been
+    // seeded, avoid reopening a serialized write transaction on every cold
+    // start just to reinsert rows that already exist.
+    if (one("SELECT 1 AS ready FROM settings WHERE key='platform'")) {
+      globalPg.royaleReady = true;
+      return;
+    }
     // A serverless cold start must not seed each row with a separate network
     // round trip through Supabase's transaction pooler. Batch the idempotent
     // seed data into a handful of statements; the schema is installed by the
