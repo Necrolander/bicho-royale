@@ -42,6 +42,7 @@ import {
   saveMercadoPagoConfig,
   testMercadoPagoConnection,
 } from '@/lib/mercadopago';
+import { createWithdrawal, listUserWithdrawals, listAllWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
 import { defaultScratchConfig, pickScratchPrize } from '@/lib/scratchcards';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -159,11 +160,14 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const body = z
         .object({
           name: z.string().trim().min(2).max(60).optional(),
+          fullName: z.string().trim().min(2).max(120).optional(),
+          cpf: z.string().min(11).max(14).optional(),
           email: z.email().max(200),
           password: z.string().min(10).max(128),
         })
         .parse(payload);
       const email = body.email.toLowerCase();
+      const cpfClean = body.cpf?.replace(/\D/g, '');
       rateLimit(`auth:${sha256(email)}`, 8, 15 * 60000);
       rateLimit('auth:global', 100, 60000);
       let user;
@@ -171,7 +175,9 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         if (!body.name) throw new ApiError(400, 'Informe seu nome');
         if (one('SELECT id FROM users WHERE email=?', email))
           throw new ApiError(409, 'E-mail já cadastrado');
-        const id = createUser(body.name, email, body.password);
+        if (cpfClean && one('SELECT id FROM users WHERE cpf=?', cpfClean))
+          throw new ApiError(409, 'CPF já cadastrado');
+        const id = createUser(body.name, email, body.password, 'USER', body.fullName, cpfClean);
         user = one('SELECT * FROM users WHERE id=?', id)!;
       } else {
         user = one('SELECT * FROM users WHERE email=?', email);
@@ -426,6 +432,19 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       });
       return json({ ok: true });
     }
+    if (path === 'withdrawals' && !post) {
+      const user = (await currentUser())!;
+      return json(await listUserWithdrawals(String(user.id)));
+    }
+    if (path === 'withdrawals' && post) {
+      const user = (await currentUser())!;
+      const input = z.object({
+        amountCents: z.number().int().min(100).max(100000),
+        cpf: z.string().min(11).max(14),
+        pixKey: z.string().max(200).optional(),
+      }).parse(payload);
+      return json(await createWithdrawal({ userId: String(user.id), ...input }), 201);
+    }
     if (path === 'scratchcards' && post) {
       const user = requireRegistration((await currentUser())!);
       rateLimit(`scratch:${user.id}`, 30, 60_000);
@@ -625,7 +644,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           roulette: { entries: Number(rouletteStats.count), pointsWagered: Number(rouletteStats.wagered), winningEntries: rouletteWins, prizePoints: 0 },
           scratch: { cards: Number(scratchStats.count), pointsSpent: Number(scratchStats.spent), prizePoints: Number(scratchStats.prizes), netPoints: Number(scratchStats.prizes) - Number(scratchStats.spent) },
           pix: { confirmedCents: Number(pixStats.confirmed_cents), pendingCents: Number(pixStats.pending_cents), confirmedCount: Number(pixStats.confirmed_count), pendingCount: Number(pixStats.pending_count), otherCount: Number(pixStats.other_count) },
-          withdrawals: { count: 0, amountCents: 0, configured: false },
+          withdrawals: (() => {
+            const wStats = one(`SELECT COALESCE(sum(CASE WHEN w.status='APPROVED' THEN w.amount_cents ELSE 0 END),0) AS approved_cents, COALESCE(sum(CASE WHEN w.status='PENDING' THEN w.amount_cents ELSE 0 END),0) AS pending_cents, COALESCE(sum(CASE WHEN w.status='APPROVED' THEN 1 ELSE 0 END),0) AS approved_count, COALESCE(sum(CASE WHEN w.status='PENDING' THEN 1 ELSE 0 END),0) AS pending_count, COALESCE(sum(CASE WHEN w.status NOT IN ('APPROVED','PENDING') THEN 1 ELSE 0 END),0) AS other_count FROM withdrawals w JOIN users u ON u.id=w.user_id WHERE 1=1${pixWhere.sql}`, ...pixWhere.params);
+            return { confirmedCents: Number(wStats?.approved_cents || 0), pendingCents: Number(wStats?.pending_cents || 0), confirmedCount: Number(wStats?.approved_count || 0), pendingCount: Number(wStats?.pending_count || 0), otherCount: Number(wStats?.other_count || 0), configured: true };
+          })(),
           events,
           limited: allEvents.length > 1000 || roulette.length === 500 || scratch.length === 500 || pix.length === 500 || movements.length === 200,
         });
@@ -685,6 +707,20 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         const input = z.object({ id: z.uuid() }).parse(payload);
         rateLimit(`admin-mp-refresh:${admin.id}`, 30, 60000);
         return json(await refreshMercadoPagoDepositAsAdmin(String(admin.id), input.id));
+      }
+      if (path === 'admin/withdrawals' && !post)
+        return json(
+          all(
+            `SELECT w.*, u.name, u.email FROM withdrawals w JOIN users u ON u.id=w.user_id ORDER BY w.created_at DESC LIMIT 200`,
+          ),
+        );
+      if (path === 'admin/withdrawals' && post) {
+        const input = z.object({
+          id: z.uuid(),
+          action: z.enum(['approve', 'reject']),
+          adminNote: z.string().max(500).optional(),
+        }).parse(payload);
+        return json(await processWithdrawalAsAdmin(String(admin.id), input.id, input.action, input.adminNote));
       }
       if (path === 'admin/modes' && !post) return json(settings().modeRules || {});
       if (path === 'admin/modes' && post) {

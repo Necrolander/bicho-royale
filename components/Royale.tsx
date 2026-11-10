@@ -44,7 +44,7 @@ import { pagePaths, resolvePage, type Page } from '@/lib/navigation';
 import { Tickets } from './Traditional';
 import type { ScratchConfig } from '@/lib/scratchcards';
 import DepositScreen from './Deposit';
-import WithdrawalsDemo from './WithdrawalsDemo';
+import WithdrawalScreen from './Withdrawal';
 type User = {
   id: string;
   name: string;
@@ -1166,10 +1166,7 @@ export default function Royale() {
                 <DepositScreen pixEnabled={data.paymentsEnabled} mpEnabled={data.mercadoPagoEnabled} registered={!!data.user?.email} />
               )}
               {page === 'withdrawal' && (
-                <WithdrawalsDemo
-                  points={data.user?.points || 0}
-                  onNavigate={(destination) => navigate(destination)}
-                />
+                <WithdrawalScreen points={data.user?.points || 0} registered={!!data.user?.email} />
               )}
               {activePage === 'admin' &&
                 (data.user?.role === 'ADMIN' ? (
@@ -1278,6 +1275,8 @@ export default function Royale() {
                     void act(async () => {
                       await api(`auth/${authMode}`, {
                         name: f.get('name') || undefined,
+                        fullName: f.get('fullName') || undefined,
+                        cpf: f.get('cpf') || undefined,
                         email: f.get('email'),
                         password: f.get('password'),
                       });
@@ -1288,16 +1287,46 @@ export default function Royale() {
                   }}
                 >
                   {authMode === 'register' && (
-                    <label className="field">
-                      Nome
-                      <input
-                        name="name"
-                        minLength={2}
-                        maxLength={60}
-                        required
-                        autoComplete="name"
-                      />
-                    </label>
+                    <>
+                      <label className="field">
+                        Nome de exibição
+                        <input
+                          name="name"
+                          minLength={2}
+                          maxLength={60}
+                          required
+                          autoComplete="name"
+                          placeholder="Como você quer aparecer"
+                        />
+                      </label>
+                      <label className="field">
+                        Nome completo
+                        <input
+                          name="fullName"
+                          minLength={2}
+                          maxLength={120}
+                          required
+                          autoComplete="name"
+                          placeholder="Para saques via Pix"
+                        />
+                      </label>
+                      <label className="field">
+                        CPF
+                        <input
+                          name="cpf"
+                          type="text"
+                          minLength={11}
+                          maxLength={14}
+                          required
+                          autoComplete="off"
+                          placeholder="000.000.000-00"
+                          onInput={(e) => {
+                            const v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                            e.target.value = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                          }}
+                        />
+                      </label>
+                    </>
                   )}
                   <label className="field">
                     E-mail

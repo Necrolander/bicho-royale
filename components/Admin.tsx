@@ -148,6 +148,7 @@ export default function Admin({
     paymentsEnabled: boolean;
   } | null>(null);
   const [mpDeposits, setMpDeposits] = useState<MPDeposit[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const load = async () => {
     try {
       const d = await api('admin');
@@ -161,16 +162,18 @@ export default function Admin({
     // Optional payment data must not hold the entire admin dashboard hostage.
     // This keeps core admin sections available even when Pix setup is absent or
     // its provider/database query is temporarily unavailable.
-    const [status, deposits, mpStatus, mpDeposits] = await Promise.allSettled([
+    const [status, deposits, mpStatus, mpDeposits, withdrawalsResult] = await Promise.allSettled([
       api('admin/efi'),
       api('admin/pix-deposits'),
       api('admin/mercadopago'),
       api('admin/mercadopago-deposits'),
+      api('admin/withdrawals'),
     ]);
     if (status.status === 'fulfilled') setPixStatus(status.value);
     if (deposits.status === 'fulfilled') setPixDeposits(deposits.value);
     if (mpStatus.status === 'fulfilled') setMpStatus(mpStatus.value);
     if (mpDeposits.status === 'fulfilled') setMpDeposits(mpDeposits.value);
+    if (withdrawalsResult.status === 'fulfilled') setWithdrawals(withdrawalsResult.value);
   };
   useEffect(() => {
     void load();
@@ -885,34 +888,81 @@ export default function Admin({
           )}
           {tab === 'withdrawals' && (
             <div className="withdrawal-admin-layout">
-              <section className="surface withdrawal-admin-hero">
-                <div className="withdrawal-demo-icon"><Wallet size={24} /></div>
-                <span className="eyebrow">CONTROLE DE SAQUES</span>
-                <h2>Solicitações de saque</h2>
-                <p>
-                  Esta área é apenas demonstrativa. O site não aceita pedidos de saque, não envia
-                  transferências e não coleta CPF ou dados bancários.
-                </p>
-                <span className="badge">SAQUES DESATIVADOS</span>
+              <section className="surface">
+                <h2>Solicitações de Saque via Pix</h2>
+                <p>Gerencie saques solicitados pelos usuários. O administrador envia o Pix manualmente para a chave informada (CPF por padrão) e marca como aprovado/rejeitado.</p>
               </section>
-              <div className="admin-metrics withdrawal-admin-metrics">
-                <section className="surface"><small>Pedidos registrados</small><strong>{report?.withdrawals.count ?? 0}</strong><p>Nenhum pedido pode ser enviado neste modo.</p></section>
-                <section className="surface"><small>Valor registrado</small><strong>{brl(report?.withdrawals.amountCents ?? 0)}</strong><p>Não representa saldo disponível para pagamento.</p></section>
-                <section className="surface"><small>Prazo informativo</small><strong>Até 24 h</strong><p>Referência demonstrativa; nenhum prazo de transferência está ativo.</p></section>
-              </div>
-              <section className="surface withdrawal-admin-table">
-                <div className="admin-section-title">
-                  <span className="admin-stat-icon"><Users size={18} /></span>
-                  <div><h3>Pedidos e dados do cliente</h3><p>CPF e valor só seriam exibidos em uma operação autorizada e ativa.</p></div>
+              <section className="surface">
+                <div className="scroll-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Solicitado em</th>
+                        <th>Usuário</th>
+                        <th>CPF</th>
+                        <th>Chave Pix</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {withdrawals.map((w: any) => (
+                        <tr key={w.id}>
+                          <td>{new Date(w.created_at).toLocaleString('pt-BR')}</td>
+                          <td>
+                            {w.name}
+                            <br />
+                            <small>{w.email}</small>
+                          </td>
+                          <td>
+                            <code>{w.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</code>
+                            <button className="secondary" style={{fontSize: '0.7rem', marginTop: 4}} onClick={() => navigator.clipboard.writeText(w.cpf)}>Copiar CPF</button>
+                          </td>
+                          <td>
+                            <code>{w.pix_key || w.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</code>
+                            <button className="secondary" style={{fontSize: '0.7rem', marginTop: 4}} onClick={() => navigator.clipboard.writeText(w.pix_key || w.cpf)}>Copiar Chave</button>
+                          </td>
+                          <td>
+                            {(w.amount_cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </td>
+                          <td>
+                            <span className={`badge ${w.status === 'APPROVED' ? 'green' : w.status === 'REJECTED' ? '' : ''}`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td>
+                            {w.status === 'PENDING' && (
+                              <div style={{display: 'flex', gap: 4}}>
+                                <button
+                                  className="primary"
+                                  disabled={busy}
+                                  onClick={() => void action('admin/withdrawals', { id: w.id, action: 'approve', adminNote: 'Pix enviado manualmente pelo admin' })}
+                                >
+                                  Aprovar (Pix enviado)
+                                </button>
+                                <button
+                                  className="secondary"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    const note = prompt('Motivo da rejeição:');
+                                    if (note) void action('admin/withdrawals', { id: w.id, action: 'reject', adminNote: note });
+                                  }}
+                                >
+                                  Rejeitar
+                                </button>
+                              </div>
+                            )}
+                            {w.status === 'APPROVED' && <span style={{ color: 'var(--success)' }}>✓ Pix enviado</span>}
+                            {w.status === 'REJECTED' && <span style={{ color: 'var(--danger)' }}>✕ Rejeitado</span>}
+                            {w.admin_note && <small style={{color: 'var(--muted)'}}>{w.admin_note}</small>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="scroll-table"><table>
-                  <thead><tr><th>Cliente</th><th>CPF</th><th>Valor</th><th>Status</th><th>Solicitado em</th></tr></thead>
-                  <tbody><tr><td colSpan={5} className="withdrawal-admin-empty">Nenhuma solicitação registrada. CPF não coletado.</td></tr></tbody>
-                </table></div>
-              </section>
-              <section className="surface withdrawal-admin-note">
-                <ShieldCheck size={19} />
-                <p>Os pontos desta plataforma são fictícios e não podem ser convertidos em dinheiro. Por isso, não há CPF, fila de aprovação ou ação para marcar pagamento.</p>
+                {!withdrawals.length && <p>Nenhuma solicitação de saque registrada.</p>}
               </section>
             </div>
           )}

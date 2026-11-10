@@ -133,7 +133,7 @@ export function db() {
   const d = new DatabaseSync(path);
   d.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
  CREATE TABLE IF NOT EXISTS roles (name TEXT PRIMARY KEY);
- CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT UNIQUE,password_hash TEXT,role TEXT NOT NULL REFERENCES roles(name),blocked INTEGER NOT NULL DEFAULT 0,points INTEGER NOT NULL DEFAULT 1000 CHECK(points>=0),created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,full_name TEXT,cpf TEXT UNIQUE,email TEXT UNIQUE,password_hash TEXT,role TEXT NOT NULL REFERENCES roles(name),blocked INTEGER NOT NULL DEFAULT 0,points INTEGER NOT NULL DEFAULT 1000 CHECK(points>=0),created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS animals(id INTEGER PRIMARY KEY CHECK(id BETWEEN 1 AND 25),name TEXT NOT NULL,tens TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS modes(id TEXT PRIMARY KEY,definition TEXT NOT NULL);
@@ -156,6 +156,7 @@ export function db() {
  CREATE TABLE IF NOT EXISTS pix_deposits(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),txid TEXT UNIQUE NOT NULL,amount_cents INTEGER NOT NULL CHECK(amount_cents>0),status TEXT NOT NULL,copy_paste TEXT,created_at TEXT NOT NULL,confirmed_at TEXT,e2e_id TEXT UNIQUE);
 CREATE TABLE IF NOT EXISTS mercadopago_configs(id INTEGER PRIMARY KEY CHECK(id=1),encrypted TEXT NOT NULL,environment TEXT NOT NULL,updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS mercadopago_deposits(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),external_reference TEXT UNIQUE NOT NULL,amount_cents INTEGER NOT NULL CHECK(amount_cents>0),payment_method TEXT NOT NULL,status TEXT NOT NULL,init_point TEXT,sandbox_init_point TEXT,created_at TEXT NOT NULL,confirmed_at TEXT,payment_id TEXT,qr_code TEXT,qr_code_base64 TEXT,ticket_url TEXT);
+ CREATE TABLE IF NOT EXISTS withdrawals(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),amount_cents INTEGER NOT NULL CHECK(amount_cents>0),status TEXT NOT NULL DEFAULT 'PENDING',cpf TEXT NOT NULL,pix_key TEXT,created_at TEXT NOT NULL,processed_at TEXT,admin_id TEXT,admin_note TEXT);
  CREATE TABLE IF NOT EXISTS scratch_cards(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),idempotency_key TEXT NOT NULL,price_points INTEGER NOT NULL,prize_points INTEGER NOT NULL,prize_label TEXT NOT NULL,created_at TEXT NOT NULL,game_id TEXT,UNIQUE(user_id,idempotency_key));
  CREATE INDEX IF NOT EXISTS idx_round_state ON rounds(state,locks_at);
  CREATE INDEX IF NOT EXISTS idx_entry_user ON entries(user_id,created_at);
@@ -171,6 +172,14 @@ CREATE INDEX IF NOT EXISTS idx_mp_user ON mercadopago_deposits(user_id,created_a
  CREATE TRIGGER IF NOT EXISTS immutable_audit_delete BEFORE DELETE ON audit_logs BEGIN SELECT RAISE(ABORT,'Audit is immutable'); END;`);
   if (!d.prepare('PRAGMA table_info(scratch_cards)').all().some((column) => column.name === 'game_id'))
     d.exec('ALTER TABLE scratch_cards ADD COLUMN game_id TEXT');
+  if (!d.prepare('PRAGMA table_info(users)').all().some((column) => column.name === 'full_name'))
+    d.exec('ALTER TABLE users ADD COLUMN full_name TEXT');
+  if (!d.prepare('PRAGMA table_info(users)').all().some((column) => column.name === 'cpf'))
+    d.exec('ALTER TABLE users ADD COLUMN cpf TEXT UNIQUE');
+  if (!d.prepare('PRAGMA table_info(withdrawals)').all().some((column) => column.name === 'id'))
+    d.exec(`CREATE TABLE IF NOT EXISTS withdrawals(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),amount_cents INTEGER NOT NULL CHECK(amount_cents>0),status TEXT NOT NULL DEFAULT 'PENDING',cpf TEXT NOT NULL,pix_key TEXT,created_at TEXT NOT NULL,processed_at TEXT,admin_id TEXT,admin_note TEXT)`);
+  if (!d.prepare("SELECT * FROM sqlite_master WHERE type='index' AND name='idx_withdrawals_user'").get())
+    d.exec('CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id,created_at)');
   globalDb.royaleDb = d;
   ['USER', 'ADMIN'].forEach((x) => d.prepare('INSERT OR IGNORE INTO roles VALUES(?)').run(x));
   animals.forEach((x) =>

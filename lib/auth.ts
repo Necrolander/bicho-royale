@@ -25,6 +25,8 @@ export function publicUser(user: Row) {
   return {
     id: user.id,
     name: user.name,
+    fullName: user.full_name,
+    cpf: user.cpf,
     email: user.email,
     role: user.role,
     points: user.points,
@@ -94,13 +96,17 @@ export function createUser(
   email: string | null,
   password: string | null,
   role = 'USER',
+  fullName?: string,
+  cpf?: string,
 ) {
   const id = randomUUID();
   transaction(() => {
     run(
-      'INSERT INTO users(id,name,email,password_hash,role,created_at) VALUES(?,?,?,?,?,?)',
+      'INSERT INTO users(id,name,full_name,cpf,email,password_hash,role,created_at) VALUES(?,?,?,?,?,?,?,?)',
       id,
       name,
+      fullName || null,
+      cpf || null,
       email,
       password ? passwordHash(password) : null,
       role,
