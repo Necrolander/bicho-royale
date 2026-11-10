@@ -169,7 +169,7 @@ export async function createMercadoPagoPayment(
   const mpPaymentMethod = mapPaymentMethod(paymentMethod);
 
   transaction(() => {
-    run('INSERT INTO mercadopago_deposits VALUES(?,?,?,?,?,?,?,?,?,?)', id, userId, externalReference, amountCents, paymentMethod.toUpperCase(), 'CREATING', null, new Date().toISOString(), null, null);
+    run('INSERT INTO mercadopago_deposits(id,user_id,external_reference,amount_cents,payment_method,status,init_point,sandbox_init_point,created_at,confirmed_at,payment_id,qr_code,qr_code_base64,ticket_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, userId, externalReference, amountCents, paymentMethod.toUpperCase(), 'CREATING', null, null, new Date().toISOString(), null, null, null, null, null);
     audit(userId, 'MP_DEPOSIT_REQUESTED', { id, externalReference, amountCents, paymentMethod });
   });
 
