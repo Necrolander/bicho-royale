@@ -115,7 +115,12 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     // Bootstrap only reads account and display data. Running round transitions
     // here made every page load contend for the global Postgres transaction
     // lock; mutations and admin/game routes still advance the round lifecycle.
-    if (path !== 'bootstrap' && path !== 'events') advanceRounds();
+    if (
+      path !== 'bootstrap' &&
+      path !== 'events' &&
+      (!path.startsWith('admin') || post)
+    )
+      advanceRounds();
     if (path === 'events' && !post) {
       await currentUser();
       let timer: ReturnType<typeof setInterval>;
