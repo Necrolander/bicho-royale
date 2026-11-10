@@ -1354,7 +1354,7 @@ export default function Royale() {
                 </section>
               )}
               {page === 'withdrawal' && (
-                <WithdrawalScreen balance={data.user?.points || 0} registered={!!data.user?.email} />
+                <WithdrawalScreen registered={!!data.user?.email} />
               )}
               {activePage === 'admin' &&
                 (data.user?.role === 'ADMIN' ? (

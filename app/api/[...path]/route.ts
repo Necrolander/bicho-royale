@@ -44,7 +44,7 @@ import {
   saveMercadoPagoConfig,
   testMercadoPagoConnection,
 } from '@/lib/mercadopago';
-import { createWithdrawal, listUserWithdrawals, listAllWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
+import { listUserWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
 import { defaultScratchConfig, pickScratchPrize } from '@/lib/scratchcards';
 import { isValidCpf, normalizeCpf } from '@/lib/cpf';
 export const runtime = 'nodejs';
@@ -59,6 +59,7 @@ const entrySchema = z.object({
 });
 const json = (data: unknown, status = 200) =>
   Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
+const missingAccountHash = `${'0'.repeat(32)}:${'0'.repeat(128)}`;
 async function readJson(req: Request, maxBytes = 16000): Promise<unknown> {
   const reader = req.body?.getReader();
   if (!reader) throw new ApiError(400, 'Informe um corpo JSON');
@@ -92,8 +93,6 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       url = new URL(req.url),
       post = req.method === 'POST';
     if (path === 'health' && !post) return json({ ok: true, time: Date.now() });
-    initialize();
-    startScheduler();
     let payload: unknown;
     if (post) {
       const origin = req.headers.get('origin');
@@ -116,15 +115,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         throw new ApiError(413, 'Solicitação muito grande');
       payload = await readJson(req, maxBytes);
     }
-    // Bootstrap only reads account and display data. Running round transitions
-    // here made every page load contend for the global Postgres transaction
-    // lock; mutations and admin/game routes still advance the round lifecycle.
-    if (
-      path !== 'bootstrap' &&
-      path !== 'events' &&
-      (!path.startsWith('admin') || post)
-    )
-      advanceRounds();
+    initialize();
+    startScheduler();
     if (path === 'events' && !post) {
       await currentUser();
       let timer: ReturnType<typeof setInterval>;
@@ -185,7 +177,9 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         user = one('SELECT * FROM users WHERE id=?', id)!;
       } else {
         user = one('SELECT * FROM users WHERE email=?', email);
-        if (!user || user.blocked || !passwordMatches(body.password, String(user.password_hash))) {
+        const storedHash = typeof user?.password_hash === 'string' ? user.password_hash : null;
+        const validPassword = passwordMatches(body.password, storedHash || missingAccountHash);
+        if (!user || user.blocked || !storedHash || !validPassword) {
           audit(null, 'AUTH_FAILED', { emailHash: sha256(email) });
           throw new ApiError(401, 'Credenciais inválidas');
         }
@@ -286,6 +280,18 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     if (path === 'bootstrap') {
       const user = await currentUser(false);
       const platformSettings = settings();
+      if (user) {
+        const now = new Date().toISOString();
+        const round = one(
+          "SELECT state,opens_at,locks_at FROM rounds WHERE type='ROULETTE' AND state IN ('SCHEDULED','OPEN','LOCKED','DRAWING') ORDER BY locks_at LIMIT 1",
+        );
+        if (
+          (!round && !platformSettings.paused) ||
+          (round?.state === 'SCHEDULED' && String(round.opens_at) <= now) ||
+          (round?.state === 'OPEN' && String(round.locks_at) <= now) ||
+          round?.state === 'LOCKED'
+        ) advanceRounds();
+      }
       const scratchConfig = (platformSettings.scratch || defaultScratchConfig) as typeof defaultScratchConfig;
       const recentWins = all(
         'SELECT game_id,prize_label,prize_points,created_at FROM scratch_cards WHERE prize_points>0 ORDER BY created_at DESC LIMIT 10',
@@ -304,7 +310,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       });
       return json({
         user: user ? publicUser(user) : null,
-        paymentsEnabled: process.env.EFI_PAYMENTS_ENABLED === 'true' && efiStatus().configured,
+        paymentsEnabled: efiStatus().paymentsEnabled,
         mercadoPagoEnabled: mercadoPagoStatus().paymentsEnabled,
         animals,
         modes,
@@ -355,11 +361,13 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     if (path === 'entries' && post) {
       const user = requireRegistration((await currentUser())!);
       rateLimit(`entry:${user.id}`, 30);
+      advanceRounds();
       return json(ticketReceipt(enterRound(String(user.id), entrySchema.parse(payload))), 201);
     }
     if (path === 'entries/groups' && post) {
       const user = requireRegistration((await currentUser())!);
       rateLimit(`entry:${user.id}`, 30);
+      advanceRounds();
       const input = entrySchema
         .extend({
           mode: z.enum(['grupo', 'cabeca', 'cercado']),
@@ -456,13 +464,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       return json(await listUserWithdrawals(String(user.id)));
     }
     if (path === 'withdrawals' && post) {
-      const user = (await currentUser())!;
-      const input = z.object({
-        amountCents: z.number().int().min(100).max(100000),
-        cpf: z.string().min(11).max(14).optional(),
-        pixKey: z.string().max(200).optional(),
-      }).parse(payload);
-      return json(await createWithdrawal({ userId: String(user.id), ...input }), 201);
+      await currentUser();
+      throw new ApiError(403, 'O saldo demonstrativo não pode ser sacado via Pix.');
     }
     if (path === 'scratchcards' && post) {
       const user = requireRegistration((await currentUser())!);

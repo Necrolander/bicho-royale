@@ -9,6 +9,7 @@ const { ownTicket } = await import('../lib/tickets');
 const { enterGroupBatch } = await import('../lib/rounds');
 const { scheduleYoutubeRound, publishYoutubeResult, youtubeVideo } = await import('../lib/rounds');
 const { saveEfiConfig, efiStatus, createPixDeposit } = await import('../lib/efi');
+const { listUserWithdrawals, processWithdrawalAsAdmin } = await import('../lib/withdrawals');
 let user: string, round: string;
 beforeAll(() => {
   user = createUser('Teste local', 'test@example.test', 'password-test-123');
@@ -19,6 +20,22 @@ beforeAll(() => {
   });
 });
 describe('Persistência e transações', () => {
+  it('bloqueia pagamento de saques antigos e devolve créditos somente uma vez', () => {
+    const owner = createUser('Titular do histórico', 'withdrawal@example.test', 'password-test-123');
+    const id = randomUUID();
+    run('UPDATE users SET points=900 WHERE id=?', owner);
+    run(
+      'INSERT INTO withdrawals(id,user_id,amount_cents,cpf,pix_key,created_at) VALUES(?,?,?,?,?,?)',
+      id, owner, 100, '00000000000', 'chave-de-teste', new Date().toISOString(),
+    );
+
+    expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('cpf');
+    expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('pix_key');
+    expect(() => processWithdrawalAsAdmin(user, id, 'approve')).toThrow('não podem ser pagos');
+    expect(processWithdrawalAsAdmin(user, id, 'reject')).toMatchObject({ status: 'REJECTED' });
+    expect(() => processWithdrawalAsAdmin(user, id, 'reject')).toThrow('já foi processada');
+    expect(one('SELECT points FROM users WHERE id=?', owner)?.points).toBe(1000);
+  });
   it('exige cadastro para registrar bilhetes', () => {
     const guest = createUser('Visitante', null, null);
     expect(() => requireRegistration(one('SELECT * FROM users WHERE id=?', guest)!)).toThrow('Cadastre-se');

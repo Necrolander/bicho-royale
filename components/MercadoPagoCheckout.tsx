@@ -312,7 +312,7 @@ export default function MercadoPagoCheckout({
         <div className="mp-success">
           <div className="success-icon">✓</div>
           <h4>Pagamento aprovado!</h4>
-          <p>Seu saldo foi adicionado.</p>
+          <p>O pagamento de teste foi registrado no histórico.</p>
           <button className="primary" onClick={onClose}>Fechar</button>
         </div>
       )}

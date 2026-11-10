@@ -31,7 +31,7 @@ export function saveEfiConfig(config: EfiConfig, actor: string) {
 export function efiStatus() {
   const row = one('SELECT environment,pix_key_hint,updated_at FROM efi_configs WHERE id=1');
   return row ? { configured: true, environment: row.environment, pixKeyHint: row.pix_key_hint, updatedAt: row.updated_at,
-    paymentsEnabled: process.env.EFI_PAYMENTS_ENABLED === 'true' } : { configured: false, paymentsEnabled: false };
+    paymentsEnabled: process.env.EFI_PAYMENTS_ENABLED === 'true' && row.environment === 'homologation' } : { configured: false, paymentsEnabled: false };
 }
 function loadConfig(): EfiConfig {
   const row = one('SELECT encrypted FROM efi_configs WHERE id=1');
@@ -90,6 +90,8 @@ function requirePayments() {
 export async function createPixDeposit(userId: string, amountCents: number) {
   requirePayments();
   const config = loadConfig();
+  if (config.environment !== 'homologation')
+    throw new ApiError(503, 'Depósitos Efí disponíveis apenas em homologação.');
   const id = randomUUID();
   const txid = randomBytes(16).toString('hex');
   transaction(() => {

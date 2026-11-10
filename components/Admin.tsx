@@ -849,7 +849,7 @@ export default function Admin({
                           </td>
                           <td>
                             {deposit.qr_code_base64 && (
-                              <img src={`data:image/png;base64,${deposit.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 120, cursor: 'pointer' }} onClick={() => window.open(deposit.ticket_url || '', '_blank')} />
+                              <img src={`data:image/png;base64,${deposit.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 120, cursor: 'pointer' }} onClick={() => window.open(deposit.ticket_url || '', '_blank', 'noopener,noreferrer')} />
                             )}
                             {deposit.qr_code && !deposit.qr_code_base64 && (
                               <div style={{ maxWidth: 200 }}>
@@ -890,7 +890,7 @@ export default function Admin({
             <div className="withdrawal-admin-layout">
               <section className="surface">
                 <h2>Solicitações de Saque via Pix</h2>
-                <p>Gerencie saques solicitados pelos usuários. O administrador envia o Pix manualmente para a chave informada (CPF por padrão) e marca como aprovado/rejeitado.</p>
+                <p>Os créditos demonstrativos não podem ser pagos via Pix. Rejeite solicitações pendentes para devolver os créditos ao saldo.</p>
               </section>
               <section className="surface">
                 <div className="scroll-table">
@@ -934,13 +934,6 @@ export default function Admin({
                           <td>
                             {w.status === 'PENDING' && (
                               <div style={{display: 'flex', gap: 4}}>
-                                <button
-                                  className="primary"
-                                  disabled={busy}
-                                  onClick={() => void action('admin/withdrawals', { id: w.id, action: 'approve', adminNote: 'Pix enviado manualmente pelo admin' })}
-                                >
-                                  Aprovar (Pix enviado)
-                                </button>
                                 <button
                                   className="secondary"
                                   disabled={busy}

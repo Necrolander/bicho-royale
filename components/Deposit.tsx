@@ -109,7 +109,7 @@ export default function DepositScreen({
   const handleMPSuccess = async () => {
     setShowMPCheckout(false);
     await load();
-    setMessage('Pagamento aprovado! Saldo adicionado.');
+    setMessage('Pagamento de teste aprovado. Consulte o registro no histórico.');
   };
 
   const handleMPError = (error: string) => {
@@ -233,7 +233,7 @@ export default function DepositScreen({
               </a>
               <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
-            {mp.status === 'CONFIRMED' && <span className="deposit-confirmed"><BadgeCheck size={14} /> Créditos confirmados</span>}
+            {mp.status.toUpperCase() === 'CONFIRMED' && <span className="deposit-confirmed"><BadgeCheck size={14} /> Pagamento confirmado</span>}
           </div>
         );
       }

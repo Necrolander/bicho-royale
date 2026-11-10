@@ -67,7 +67,7 @@ function loadConfig(): MercadoPagoConfig {
 
 export function mercadoPagoCheckoutPublicKey() {
   const config = loadConfig();
-  if (config.environment !== 'sandbox')
+  if (config.environment !== 'sandbox' || !config.publicKey.startsWith('TEST-'))
     throw new ApiError(503, 'Checkout disponível somente em ambiente de testes');
   return { publicKey: config.publicKey };
 }
@@ -136,7 +136,7 @@ function mpRequest(
       response.on('end', () => {
         try {
           const json = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
-          if ((response.statusCode || 500) >= 400) reject(new ApiError(502, `Mercado Pago recusou a solicitação (${response.statusCode}): ${JSON.stringify(json)}`));
+          if ((response.statusCode || 500) >= 400) reject(new ApiError(502, `Mercado Pago recusou a solicitação (${response.statusCode}).`));
           else resolve(json);
         } catch { reject(new ApiError(502, 'Resposta Mercado Pago inválida')); }
       });
@@ -156,7 +156,7 @@ export async function testMercadoPagoConnection() {
 function requirePayments(config: MercadoPagoConfig) {
   if (process.env.MERCADOPAGO_PAYMENTS_ENABLED !== 'true')
     throw new ApiError(503, 'Depósitos Mercado Pago ainda não estão habilitados');
-  if (config.environment !== 'sandbox')
+  if (config.environment !== 'sandbox' || !config.accessToken.startsWith('TEST-') || !config.publicKey.startsWith('TEST-'))
     throw new ApiError(503, 'Pagamentos reais estão desativados; configure credenciais de sandbox para testar');
 }
 
@@ -268,16 +268,21 @@ export async function createMercadoPagoPayment(
     if (result.ticketUrl) updateFields.ticket_url = result.ticketUrl;
 
     transaction(() => {
+      if (one('SELECT status FROM mercadopago_deposits WHERE id=?', id)?.status === 'CONFIRMED') {
+        delete updateFields.status;
+        delete updateFields.confirmed_at;
+        delete updateFields.payment_id;
+      }
       const setClause = Object.keys(updateFields).map(k => `${k}=?`).join(',');
       const values = [...Object.values(updateFields).map((value) => value == null ? null : String(value)), id];
-      run(`UPDATE mercadopago_deposits SET ${setClause} WHERE id=?`, ...values);
+      if (setClause) run(`UPDATE mercadopago_deposits SET ${setClause} WHERE id=?`, ...values);
       audit(userId, 'MP_DEPOSIT_CREATED', { id, externalReference, mpPaymentId: response.id, status: response.status });
     });
 
     return result;
   } catch (error) {
     transaction(() => {
-      run('UPDATE mercadopago_deposits SET status=? WHERE id=?', 'ERROR', id);
+      run("UPDATE mercadopago_deposits SET status=? WHERE id=? AND status='CREATING'", 'ERROR', id);
       audit(userId, 'MP_DEPOSIT_FAILED', { id, externalReference });
     });
     throw error;
@@ -300,7 +305,7 @@ export async function refreshMercadoPagoDeposit(userId: string, id: string) {
     return { id, status: row.status, amountCents: row.amount_cents, qrCode: row.qr_code, qrCodeBase64: row.qr_code_base64, ticketUrl: row.ticket_url };
   }
 
-  const response = await mpRequest(config, 'GET', `/payments/${paymentId}`);
+  const response = await mpRequest(config, 'GET', `/payments/${encodeURIComponent(String(paymentId))}`);
   return processPaymentResponse(userId, id, response);
 }
 
@@ -308,11 +313,16 @@ async function processPaymentResponse(userId: string, depositId: string, payment
   if (String(payment.status).toLowerCase() === 'approved' && payment.external_reference) {
     const paidCents = Math.round(Number(payment.transaction_amount) * 100);
     const row = one('SELECT * FROM mercadopago_deposits WHERE id=?', depositId);
-    if (row && paidCents === Number(row.amount_cents)) {
+    const paymentId = String(payment.id ?? '');
+    if (
+      row && payment.external_reference === row.external_reference &&
+      /^\d+$/.test(paymentId) && (!row.payment_id || String(row.payment_id) === paymentId) &&
+      payment.currency_id === 'BRL' && paidCents === Number(row.amount_cents)
+    ) {
       transaction(() => {
         const currentStatus = String(one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status || '').toUpperCase();
         if (!['PENDING', 'CREATING', 'IN_PROCESS'].includes(currentStatus)) return;
-        run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), depositId);
+        run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), paymentId, depositId);
         audit(userId, 'MP_DEPOSIT_CONFIRMED', { id: depositId, externalReference: String(payment.external_reference), amountCents: paidCents });
       });
     }
@@ -338,23 +348,13 @@ export async function refreshMercadoPagoDepositAsAdmin(adminId: string, id: stri
 }
 
 export async function handleMercadoPagoWebhook(topic: string, resourceId: string) {
+  if (topic !== 'payment') return { received: true };
+  if (!/^\d{1,24}$/.test(resourceId)) throw new ApiError(400, 'Identificador de pagamento inválido');
   const config = loadConfig();
-  if (topic === 'payment') {
-    const response = await mpRequest(config, 'GET', `/payments/${resourceId}`);
-    const payment = response as Record<string, unknown>;
-    if (String(payment.status).toLowerCase() === 'approved' && payment.external_reference) {
-      const row = one('SELECT * FROM mercadopago_deposits WHERE external_reference=?', String(payment.external_reference));
-      if (row && ['PENDING', 'CREATING', 'IN_PROCESS'].includes(String(row.status).toUpperCase())) {
-        const paidCents = Math.round(Number(payment.transaction_amount) * 100);
-        if (paidCents === Number(row.amount_cents)) {
-          transaction(() => {
-            if (one('SELECT status FROM mercadopago_deposits WHERE id=?', String(row.id))?.status !== 'PENDING' && one('SELECT status FROM mercadopago_deposits WHERE id=?', String(row.id))?.status !== 'CREATING') return;
-            run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), String(payment.id), String(row.id));
-            audit(String(row.user_id), 'MP_DEPOSIT_CONFIRMED', { id: String(row.id), externalReference: String(row.external_reference), amountCents: paidCents });
-          });
-        }
-      }
-    }
-  }
+  const payment = await mpRequest(config, 'GET', `/payments/${resourceId}`);
+  if (String(payment.id) !== resourceId || typeof payment.external_reference !== 'string')
+    return { received: true };
+  const row = one('SELECT id,user_id FROM mercadopago_deposits WHERE external_reference=?', payment.external_reference);
+  if (row) await processPaymentResponse(String(row.user_id), String(row.id), payment);
   return { received: true };
 }

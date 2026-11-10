@@ -6,70 +6,26 @@ type Withdrawal = {
   id: string;
   amount_cents: number;
   status: string;
-  cpf: string;
-  pix_key: string | null;
   created_at: string;
   processed_at: string | null;
   admin_note: string | null;
 };
 
-export default function WithdrawalScreen({ balance, registered }: { balance: number; registered: boolean }) {
-  const [amount, setAmount] = useState('');
-  const [pixKey, setPixKey] = useState('');
+export default function WithdrawalScreen({ registered }: { registered: boolean }) {
   const [items, setItems] = useState<Withdrawal[]>([]);
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [userCpf, setUserCpf] = useState('');
+  const [loading, setLoading] = useState(registered);
 
-  const load = async () => {
-    try {
-      if (registered) {
-        const data = await api('withdrawals');
-        setItems(data);
-        const user = await api('bootstrap');
-        if (user.user?.cpf) setUserCpf(user.user.cpf);
-      }
-    } catch (error) { setMessage((error as Error).message); }
-  };
-  useEffect(() => { if (registered) void load(); }, [registered]);
-
-  const create = async () => {
-    const cents = Math.round(Number(amount.replace(',', '.')) * 100);
-    if (!Number.isInteger(cents) || cents < 100 || cents > 100000) {
-      setMessage('Informe um valor de R$ 1,00 a R$ 1.000,00.'); return;
-    }
-    if (cents > balance) {
-      setMessage(`Saldo insuficiente. Seu saldo é R$ ${(balance/100).toFixed(2).replace('.', ',')}.`); return;
-    }
-    setBusy(true); setMessage('');
-    try {
-      await api('withdrawals', { amountCents: cents, pixKey: pixKey || undefined });
-      setAmount(''); setPixKey('');
-      await load();
-      setMessage('Solicitação de saque enviada! Aguarde aprovação do administrador.');
-    } catch (error) { setMessage((error as Error).message); }
-    finally { setBusy(false); }
-  };
-
-  const renderForm = () => {
-    if (!registered) return <p>Crie uma conta com e-mail e senha antes de solicitar um saque.</p>;
-
-    return (
-      <div className="withdrawal-form">
-        <div className="balance-card">
-          <span className="eyebrow">SALDO DISPONÍVEL</span>
-          <b>R$ {(balance / 100).toFixed(2).replace('.', ',')}</b>
-        </div>
-        <label className="field">Valor do saque<input type="number" min="1" max="1000" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10.00" /></label>
-        <p style={{fontSize: '0.85rem', color: 'var(--muted)'}}>{userCpf ? `CPF vinculado ao perfil: ${userCpf}` : 'Cadastre seu CPF no perfil para solicitar saque.'}</p>
-        <label className="field">Chave Pix (opcional, padrão: CPF)<input type="text" value={pixKey} onChange={(e) => setPixKey(e.target.value)} placeholder="CPF, e-mail, telefone ou aleatória" /></label>
-        <button className="primary full" disabled={busy} onClick={() => void create()}>
-          {busy ? 'Enviando...' : 'Solicitar saque via Pix'}
-        </button>
-        <p style={{fontSize: '0.8rem', color: 'var(--muted)'}}>O administrador receberá a solicitação e enviará o Pix manualmente para a chave informada. O CPF será usado como chave Pix padrão.</p>
-      </div>
-    );
-  };
+  useEffect(() => {
+    if (!registered) return;
+    let active = true;
+    setLoading(true);
+    api('withdrawals')
+      .then((data) => { if (active) setItems(data); })
+      .catch((error: Error) => { if (active) setMessage(error.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [registered]);
 
   const renderList = () => {
     if (!items.length) return <p>Nenhum saque solicitado.</p>;
@@ -87,8 +43,6 @@ export default function WithdrawalScreen({ balance, registered }: { balance: num
             <span style={{ color: statusColors[item.status] || 'var(--muted)' }}>{item.status}</span>
           </div>
           <div className="withdrawal-details">
-            <span>CPF: {item.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</span>
-            <span>Chave Pix: {item.pix_key || item.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</span>
             <span>Solicitado: {new Date(item.created_at).toLocaleString('pt-BR')}</span>
             {item.processed_at && <span>Processado: {new Date(item.processed_at).toLocaleString('pt-BR')}</span>}
             {item.admin_note && <span style={{fontSize: '0.85rem', color: 'var(--muted)'}}>Obs: {item.admin_note}</span>}
@@ -101,14 +55,14 @@ export default function WithdrawalScreen({ balance, registered }: { balance: num
   return <div className="withdrawal-layout">
     <section className="surface">
       <span className="eyebrow">SAQUES VIA PIX</span>
-      <h2>Solicitar saque</h2>
-      {renderForm()}
+      <h2>Saques indisponíveis</h2>
+      <p>O saldo demonstrativo não pode ser sacado via Pix.</p>
       {message && <p role="alert">{message}</p>}
     </section>
     <section className="surface">
       <span className="eyebrow">SEUS SAQUES</span>
       <h2>Acompanhe o status</h2>
-      {renderList()}
+      {loading ? <p role="status">Carregando histórico…</p> : !message && renderList()}
     </section>
   </div>;
 }
