@@ -1271,6 +1271,7 @@ export default function Royale() {
                   mpEnabled={data.mercadoPagoEnabled}
                   registered={!!data.user?.email}
                   points={data.user?.points || 0}
+                  payerEmail={data.user?.email || ''}
                   onRegister={openRegistration}
                   onViewAccount={() => navigate('profile')}
                 />

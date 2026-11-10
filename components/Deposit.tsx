@@ -53,6 +53,7 @@ export default function DepositScreen({
   mpEnabled,
   registered,
   points,
+  payerEmail,
   onRegister,
   onViewAccount,
 }: {
@@ -60,6 +61,7 @@ export default function DepositScreen({
   mpEnabled: boolean;
   registered: boolean;
   points: number;
+  payerEmail: string;
   onRegister: () => void;
   onViewAccount: () => void;
 }) {
@@ -71,16 +73,10 @@ export default function DepositScreen({
   const [activeTab, setActiveTab] = useState<'pix' | 'mp'>(pixEnabled ? 'pix' : 'mp');
   const [showMPCheckout, setShowMPCheckout] = useState(false);
   const [selectedMPMethod, setSelectedMPMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
-  const [userEmail, setUserEmail] = useState('');
-
   const load = async () => {
     try {
       if (pixEnabled) setPixItems(await api('pix/deposits'));
       if (mpEnabled) setMpItems(await api('mercadopago/deposits'));
-
-      // Get user email for MP payments
-      const user = await api('bootstrap');
-      if (user.user?.email) setUserEmail(user.user.email);
     } catch (error) { setMessage((error as Error).message); }
   };
   useEffect(() => { if (registered) void load(); }, [registered, pixEnabled, mpEnabled]);
@@ -97,6 +93,11 @@ export default function DepositScreen({
   };
 
   const openMPCheckout = (paymentMethod: 'pix' | 'credit_card' | 'boleto') => {
+    if (!payerEmail) {
+      setMessage('Entre ou crie uma conta com e-mail para continuar.');
+      onRegister();
+      return;
+    }
     const cents = Math.round(Number(amount.replace(',', '.')) * 100);
     if (!Number.isInteger(cents) || cents < 100 || cents > 100000) {
       setMessage('Informe um valor de R$ 1,00 a R$ 1.000,00.'); return;
@@ -285,24 +286,15 @@ export default function DepositScreen({
       </section>
     </div>
 
-    {showMPCheckout && userEmail && (
+    {showMPCheckout && payerEmail && (
       <MercadoPagoCheckout
         amountCents={Math.round(Number(amount.replace(',', '.')) * 100)}
         paymentMethod={selectedMPMethod}
-        payerEmail={userEmail}
+        payerEmail={payerEmail}
         onSuccess={handleMPSuccess}
         onError={handleMPError}
         onClose={handleMPClose}
       />
-    )}
-    {showMPCheckout && !userEmail && (
-      <div className="mp-checkout-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-        <div className="surface" style={{ padding: 24, borderRadius: 8, maxWidth: 400 }}>
-          <h3>E-mail necessário</h3>
-          <p>Você precisa ter uma conta com e-mail cadastrado para usar o Mercado Pago.</p>
-          <button className="primary" onClick={handleMPClose}>OK</button>
-        </div>
-      </div>
     )}
   </div>;
 }
