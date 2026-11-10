@@ -54,6 +54,7 @@ type User = {
   email: string | null;
   role: string;
   points: number;
+  cpf: string | null;
   guest: boolean;
 };
 export type Round = {
@@ -218,7 +219,8 @@ export default function Royale() {
     }),
     [splash, setSplash] = useState(true),
     [authMode, setAuthMode] = useState<'login' | 'register'>('login'),
-    [passwordVisible, setPasswordVisible] = useState(false);
+    [passwordVisible, setPasswordVisible] = useState(false),
+    [profileCpfInput, setProfileCpfInput] = useState('');
   const initialized = useRef(false),
     previousRounds = useRef(new Set<string>());
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -1307,6 +1309,46 @@ export default function Royale() {
                     <button className="primary" onClick={() => navigate('withdrawal')}>
                       Ver carteira <ArrowRight size={15} />
                     </button>
+                  </article>
+                  <article className="surface account-profile-settings">
+                    <span className="eyebrow">CONFIGURAÇÕES DA CONTA</span>
+                    <h3>CPF do perfil</h3>
+                    <p>{data.user.cpf ? `CPF atual: ${data.user.cpf}` : 'Nenhum CPF cadastrado ainda.'} Informe um CPF válido para vincular ou atualizar seus dados.</p>
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void act(async () => {
+                          const result = await api('profile', { cpf: profileCpfInput });
+                          setProfileCpfInput('');
+                          initialized.current = false;
+                          await load();
+                          notify(result.cpf ? 'CPF da conta atualizado.' : 'CPF atualizado.');
+                        });
+                      }}
+                    >
+                      <label className="field">
+                        Novo CPF
+                        <input
+                          value={profileCpfInput}
+                          onChange={(event) => {
+                            const digits = event.target.value.replace(/\D/g, '').slice(0, 11);
+                            const formatted = digits
+                              .replace(/(\d{3})(\d)/, '$1.$2')
+                              .replace(/(\d{3})(\d)/, '$1.$2')
+                              .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                            setProfileCpfInput(formatted);
+                          }}
+                          inputMode="numeric"
+                          autoComplete="off"
+                          placeholder="000.000.000-00"
+                          maxLength={14}
+                          required
+                        />
+                      </label>
+                      <button className="primary" disabled={busy || profileCpfInput.replace(/\D/g, '').length !== 11}>
+                        {busy ? 'Salvando…' : 'Salvar CPF'}
+                      </button>
+                    </form>
                   </article>
                 </section>
               )}

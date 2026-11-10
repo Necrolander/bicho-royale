@@ -4660,6 +4660,12 @@ footer, footer small { color: #a6a6a6; }
 .account-dropdown > button.account-dropdown-signout { color: #ffb2a9; }
 .account-dropdown > button.account-dropdown-signout > svg:first-child { color: #ff8b7b; }
 .account-profile-page { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .8fr); gap: 15px; max-width: 1050px; }
+.account-profile-settings { grid-column: 1 / -1; padding: clamp(19px, 3vw, 28px); }
+.account-profile-settings h3 { margin: 8px 0; color: #fff; }
+.account-profile-settings p { color: #a7ada2; font-size: 13px; line-height: 1.6; }
+.account-profile-settings form { display: flex; align-items: flex-end; gap: 12px; max-width: 650px; }
+.account-profile-settings form .field { flex: 1; margin: 0; }
+@media (max-width: 520px) { .account-profile-settings form { align-items: stretch; flex-direction: column; } }
 .account-profile-card, .account-profile-wallet { min-width: 0; padding: clamp(19px, 3vw, 28px); }
 .account-profile-identity { display: flex; align-items: center; gap: 15px; min-width: 0; }
 .account-profile-avatar { display: grid; place-items: center; width: 62px; height: 62px; flex: 0 0 62px; border: 1px solid #cbff0060; border-radius: 50%; color: #101010; background: #cbff00; font-size: 23px; font-weight: 900; }

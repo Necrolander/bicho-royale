@@ -2,6 +2,7 @@ import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypt
 import { cookies } from 'next/headers';
 import { all, audit, one, run, transaction, type Row } from './db';
 import { sha256 } from './fairness';
+import { isValidCpf, normalizeCpf } from './cpf';
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -64,6 +65,17 @@ export function updateProfileName(userId: string, name: string) {
   transaction(() => {
     run('UPDATE users SET name=? WHERE id=? AND email IS NOT NULL', name, userId);
     audit(userId, 'PROFILE_UPDATED', { fields: ['name'] });
+  });
+  return publicUser(one('SELECT * FROM users WHERE id=?', userId)!);
+}
+export function updateProfileCpf(userId: string, value: string) {
+  const cpf = normalizeCpf(value);
+  if (!isValidCpf(cpf)) throw new ApiError(400, 'Informe um CPF válido');
+  if (one('SELECT id FROM users WHERE cpf=? AND id<>?', cpf, userId))
+    throw new ApiError(409, 'Este CPF já está vinculado a outra conta');
+  transaction(() => {
+    run('UPDATE users SET cpf=? WHERE id=? AND email IS NOT NULL', cpf, userId);
+    audit(userId, 'PROFILE_CPF_UPDATED', { fields: ['cpf'] });
   });
   return publicUser(one('SELECT * FROM users WHERE id=?', userId)!);
 }

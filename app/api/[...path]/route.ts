@@ -7,6 +7,7 @@ import {
   createUser,
   requireRegistration,
   updateProfileName,
+  updateProfileCpf,
   currentUser,
   passwordMatches,
   publicUser,
@@ -201,8 +202,12 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     if (path === 'profile' && post) {
       const user = requireRegistration((await currentUser())!);
       rateLimit(`profile:${user.id}`, 10, 60000);
-      const input = z.object({ name: z.string().trim().min(2).max(60) }).parse(payload);
-      return json(updateProfileName(String(user.id), input.name));
+      const input = z.object({
+        name: z.string().trim().min(2).max(60).optional(),
+        cpf: z.string().min(11).max(14).optional(),
+      }).refine((value) => value.name || value.cpf, 'Informe um dado para atualizar').parse(payload);
+      if (input.cpf) return json(updateProfileCpf(String(user.id), input.cpf));
+      return json(updateProfileName(String(user.id), input.name!));
     }
     if (path === 'pix/deposits' && !post) {
       const user = (await currentUser())!;
