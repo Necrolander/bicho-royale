@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerar MERCADOPAGO_CONFIG_KEY</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    .card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 24px; }
+    h1 { font-size: 1.2rem; margin-bottom: 16px; }
+    code { background: #111; color: #0f0; padding: 12px 16px; display: block; border-radius: 6px; font-size: 0.9rem; word-break: break-all; }
+    button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 12px; }
+    button:hover { background: #1d4ed8; }
+    .note { font-size: 0.85rem; color: #666; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>MERCADOPAGO_CONFIG_KEY (32 bytes, base64)</h1>
+    <code id="key">— clique em gerar —</code>
+    <button onclick="gen()">Gerar nova chave</button>
+    <p class="note">Copie e cole no <code>.env.local</code> e na Vercel (Settings → Environment Variables → Secret).<br>Depois mude <code>MERCADOPAGO_PAYMENTS_ENABLED=true</code> quando validar a conta.</p>
+  </div>
+  <script>
+    function gen() {
+      const arr = new Uint8Array(32);
+      crypto.getRandomValues(arr);
+      const b64 = btoa(String.fromCharCode(...arr));
+      document.getElementById('key').textContent = b64;
+      navigator.clipboard.writeText(b64).then(() => alert('Copiado!'));
+    }
+    gen();
+  </script>
+</body>
+</html>
