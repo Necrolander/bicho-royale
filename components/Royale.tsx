@@ -1454,7 +1454,7 @@ export default function Royale() {
                 <p>
                   {authMode === 'login'
                     ? 'Entre na sua conta Vegas.'
-                    : 'Crie uma conta gratuita com pontos demonstrativos.'}
+                    : 'Crie uma conta gratuita com saldo demonstrativo.'}
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -1611,7 +1611,7 @@ export default function Royale() {
                   {
                     [
                       'Escolha um ou mais bichos para acompanhar no próximo giro.',
-                      'Use pontos fictícios para registrar uma participação. Aguarde o encerramento: o servidor gera o resultado e a roleta o revela.',
+                      'Use saldo demonstrativo para registrar uma participação. Aguarde o encerramento: o servidor gera o resultado e a roleta o revela.',
                       'Seu comprovante mostra a conferência. Nos resultados recentes, você verifica a semente e o compromisso criptográfico. Tudo é demonstrativo.',
                     ][tutorialStep]
                   }

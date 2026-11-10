@@ -337,7 +337,7 @@ export function ModeScreen({
         {multiple && (
           <p role="status">
             <b>
-              {selection.length} animal(is) × {points} pontos = {selection.length * points} pontos
+              {selection.length} animal(is) × {points} R$ = {selection.length * points} R$
               no total
             </b>
           </p>
@@ -917,7 +917,7 @@ export function Dashboard({
                 {short(e.id)} · {modes.find((m) => m.id === e.mode)?.name}
               </b>
               <p>
-                {e.selection.join(' · ')} · {e.points} pontos
+                {e.selection.join(' · ')} · {e.points} R$
               </p>
               <small>
                 {date(e.created_at)} ·{' '}
