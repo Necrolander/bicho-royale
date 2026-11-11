@@ -701,7 +701,7 @@ export default function Royale() {
             <ShieldCheck size={24} />
             <b>Diversão com transparência</b>
             <p>
-              Saldo 100% demonstrativo.
+              Roleta e raspadinhas.
               <br />
               Experiência Bichos Vegas.
             </p>
@@ -713,7 +713,7 @@ export default function Royale() {
             <span className="avatar">{data?.user?.name.slice(0, 1) || 'R'}</span>
             <span>
               <b>{data?.user?.name || 'Carregando…'}</b>
-              <small>{data?.user?.guest ? 'Conta demonstrativa' : 'Membro Vegas'}</small>
+              <small>{data?.user?.guest ? 'Visitante' : 'Membro Vegas'}</small>
             </span>
             <Settings size={17} />
           </button>
@@ -774,7 +774,7 @@ export default function Royale() {
                 <div className="account-dropdown" id="account-dropdown" aria-label="Menu da conta">
                   <div className="account-dropdown-heading">
                     <span className="avatar account-dropdown-avatar">{data?.user?.name.slice(0, 1) || 'R'}</span>
-                    <span><b>{data?.user?.name || 'Minha conta'}</b><small>{data?.user?.email || 'Conta demonstrativa'}</small></span>
+                    <span><b>{data?.user?.name || 'Minha conta'}</b><small>{data?.user?.email || 'Visitante'}</small></span>
                   </div>
                   <button onClick={() => navigate('profile')}>
                     <UserRound size={16} /> Minha conta <ChevronRight size={14} />
@@ -805,12 +805,12 @@ export default function Royale() {
         {recentPrizeItems.length > 0 && activePage !== 'admin' && (
           <section
             className="prize-ticker"
-            aria-label="Prêmios e resultados demonstrativos da raspadinha"
+            aria-label="Prêmios e resultados da raspadinha"
           >
             <div className="prize-ticker-title">
               <span className="prize-ticker-star" />
               <b>PRÊMIOS</b>
-              <small>VIRTUAIS</small>
+              <small>RASPADINHAS</small>
             </div>
             <div className="prize-ticker-viewport">
               <div className="prize-ticker-track">
@@ -826,7 +826,7 @@ export default function Royale() {
                       <Ticket size={22} />
                     )}
                     <span>
-                      <small>{item.isResult ? 'RESULTADO DEMO' : item.game}</small>
+                      <small>{item.isResult ? 'RESULTADO' : item.game}</small>
                       <b>{displayPrizeLabel(item.label, item.points)}</b>
                       <em>{formatBRL(item.points)}</em>
                     </span>
@@ -834,7 +834,6 @@ export default function Royale() {
                 ))}
               </div>
             </div>
-            <small className="prize-ticker-demo">MODO DEMONSTRAÇÃO</small>
           </section>
         )}
         <main id="main">
@@ -846,7 +845,7 @@ export default function Royale() {
                   : page === 'scratch'
                     ? 'RASPE E DESCUBRA'
                     : page === 'withdrawal'
-                      ? 'SAQUES · MODO DEMONSTRAÇÃO'
+                      ? 'SAQUES'
                     : page === 'profile'
                       ? 'SUA CONTA'
                     : t.tagline.toUpperCase()}
@@ -868,10 +867,10 @@ export default function Royale() {
                     : page === 'deposit'
                       ? 'Acompanhe depósitos e veja as opções disponíveis para sua conta.'
                       : page === 'withdrawal'
-                        ? 'Consulte a disponibilidade e o prazo demonstrativo para solicitações de saque.'
+                        ? 'Consulte a disponibilidade de saques.'
                       : page === 'profile'
-                        ? 'Confira os dados da sua conta e acesse sua carteira virtual.'
-                      : 'Uma experiência demonstrativa com regras claras e resultados verificáveis.'}
+                        ? 'Confira os dados da sua conta e acesse sua carteira.'
+                      : 'Acompanhe os jogos e confira os resultados.'}
               </p>
             </div>
             <button
@@ -925,14 +924,14 @@ export default function Royale() {
                 <section className="home-page" aria-labelledby="home-headline">
                   <div className="home-hero">
                     <div className="home-hero-copy">
-                      <span className="home-kicker"><Sparkles size={14} /> BICHOS VEGAS <i /> EXPERIÊNCIA DEMONSTRATIVA</span>
+                      <span className="home-kicker"><Sparkles size={14} /> BICHOS VEGAS</span>
                       <h1 id="home-headline">A sorte entra em cena.<br /><em>Você escolhe o jogo.</em></h1>
-                      <p>Entre no clima Vegas com a roletinha de 25 animais ou escolha uma raspadinha e descubra o resultado. Tudo em saldo demonstrativo.</p>
+                      <p>Entre no clima Vegas com a roletinha de 25 animais ou escolha uma raspadinha e descubra o resultado.</p>
                       <div className="home-hero-actions">
                         <button className="primary" onClick={() => navigate('roulette')}>Ir para a roletinha <ArrowRight size={17} /></button>
                         <button className="secondary" onClick={() => navigate('scratch')}>Ver raspadinhas <Ticket size={16} /></button>
                       </div>
-                      <small><ShieldCheck size={13} /> Saldo demonstrativo, sem valor de saque.</small>
+                      <small><ShieldCheck size={13} /> Saldo para jogar, indisponível para saque.</small>
                     </div>
                     <div className="home-hero-art" aria-label="Último resultado da roleta">
                       <div className="home-art-orbit home-art-orbit-one" />
@@ -962,13 +961,13 @@ export default function Royale() {
                     </button>
                     <button className="home-mode-card home-mode-scratch" onClick={() => navigate('scratch')}>
                       <span className="home-mode-icon"><Ticket size={23} /></span>
-                      <span className="home-mode-copy"><small>02 · RASPADINHAS</small><b>Raspe para descobrir</b><span>{enabledScratchGames ? `${enabledScratchGames} opções demonstrativas disponíveis` : 'Abra os cartões e veja o que aparece'}.</span></span>
+                      <span className="home-mode-copy"><small>02 · RASPADINHAS</small><b>Raspe para descobrir</b><span>{enabledScratchGames ? `${enabledScratchGames} opções disponíveis` : 'Abra os cartões e veja o que aparece'}.</span></span>
                       <span className="home-mode-link">ABRIR <ArrowUpRight size={16} /></span>
                     </button>
                   </div>
                   <div className="home-trust-row">
                     <div><ShieldCheck size={17} /><span><b>Resultados publicados</b><small>Confira os giros recentes</small></span></div>
-                    <div><Wallet size={17} /><span><b>Saldo demonstrativo</b><small>Sem depósitos ou saques reais</small></span></div>
+                    <div><Wallet size={17} /><span><b>Saldo para jogar</b><small>Sem depósitos ou saques reais</small></span></div>
                     <div><Ticket size={17} /><span><b>{data.scratchCards.length} cartões registrados</b><small>Seu histórico fica na conta</small></span></div>
                   </div>
                   {latestRouletteResult?.result?.group && <button className="home-results-link" onClick={() => navigate('roulette')}>Ver todos os resultados da roletinha <ArrowRight size={15} /></button>}
@@ -1058,7 +1057,7 @@ export default function Royale() {
                         </button>
                       </div>
                       <div className="points-row">
-                        <span>Participação demonstrativa</span>
+                        <span>Valor da participação</span>
                         <b>
                           {formatBRL(rouletteAnimals.length * 10)} <small>no total</small>
                         </b>
@@ -1076,7 +1075,7 @@ export default function Royale() {
                         Rever último giro publicado
                       </button>
                       <p className="micro">
-                        <LockKeyhole size={12} /> Saldo demonstrativo, sem valor de saque
+                        <LockKeyhole size={12} /> Saldo para jogar, indisponível para saque
                       </p>
                       <div className="panel-tip">
                         <Info size={17} />
@@ -1090,9 +1089,9 @@ export default function Royale() {
                   <div className="metric-strip">
                     <Metric
                       icon={Wallet}
-                      label="Seu saldo demonstrativo"
+                      label="Seu saldo para jogar"
                       value={formatBRL(data.user?.points ?? 0)}
-                      detail="Exclusivamente virtuais"
+                      detail="Disponível para jogar"
                     />
                     <Metric
                       icon={Compass}
@@ -1295,10 +1294,10 @@ export default function Royale() {
                       <div>
                         <span className="eyebrow">PERFIL DA CONTA</span>
                         <h2>{data.user.name}</h2>
-                        <p>{data.user.email || 'Sessão demonstrativa sem e-mail cadastrado'}</p>
+                        <p>{data.user.email || 'Sessão sem e-mail cadastrado'}</p>
                       </div>
                       <span className={`account-role ${data.user.role === 'ADMIN' ? 'admin' : ''}`}>
-                        {data.user.guest ? 'DEMONSTRAÇÃO' : data.user.role === 'ADMIN' ? 'ADMINISTRADOR' : 'MEMBRO'}
+                        {data.user.guest ? 'VISITANTE' : data.user.role === 'ADMIN' ? 'ADMINISTRADOR' : 'MEMBRO'}
                       </span>
                     </div>
                     <div className="account-profile-actions">
@@ -1315,7 +1314,7 @@ export default function Royale() {
                   </article>
                   <article className="surface account-profile-wallet">
                     <div className="account-profile-wallet-icon"><Wallet size={19} /></div>
-                    <span className="eyebrow">CARTEIRA VIRTUAL</span>
+                    <span className="eyebrow">CARTEIRA</span>
                     <strong>{formatBRL(data.user.points)} <small>saldo</small></strong>
                     <p>Saldo para usar nas modalidades.</p>
                     <button className="primary" onClick={() => navigate('withdrawal')}>
@@ -1466,7 +1465,7 @@ export default function Royale() {
                 <p>
                   {authMode === 'login'
                     ? 'Entre na sua conta Vegas.'
-                    : 'Crie uma conta gratuita com saldo demonstrativo.'}
+                    : 'Crie uma conta gratuita com saldo para jogar.'}
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -1624,8 +1623,8 @@ export default function Royale() {
                   {
                     [
                       'Escolha um ou mais bichos para acompanhar no próximo giro.',
-                      'Use saldo demonstrativo para registrar uma participação. Aguarde o encerramento: o servidor gera o resultado e a roleta o revela.',
-                      'Seu comprovante mostra a conferência. Nos resultados recentes, você verifica a semente e o compromisso criptográfico. Tudo é demonstrativo.',
+                      'Use saldo para jogar para registrar uma participação. Aguarde o encerramento: o servidor gera o resultado e a roleta o revela.',
+                      'Seu comprovante mostra a conferência. Nos resultados recentes, você verifica a semente e o compromisso criptográfico.',
                     ][tutorialStep]
                   }
                 </p>

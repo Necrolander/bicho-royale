@@ -31,7 +31,7 @@ export function processWithdrawalAsAdmin(
   adminNote?: string,
 ) {
   if (action === 'approve')
-    throw new ApiError(403, 'O saldo demonstrativo não pode ser pago via Pix.');
+    throw new ApiError(403, 'O saldo para jogar não pode ser pago via Pix.');
 
   return transaction(() => {
     const withdrawal = one('SELECT * FROM withdrawals WHERE id=?', withdrawalId) as Withdrawal | undefined;

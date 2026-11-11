@@ -217,7 +217,7 @@ function createEntry(
   if (!Number.isInteger(input.points) || input.points < 1 || input.points > 100)
     throw new ApiError(400, 'Informe um valor de R$ 0,01 a R$ 1,00');
   if (Number(user.points) < input.points)
-    throw new ApiError(400, 'Pontos demonstrativos insuficientes');
+    throw new ApiError(400, 'Saldo insuficiente');
   const id = randomUUID(),
     now = new Date().toISOString(),
     balance = Number(user.points) - input.points;

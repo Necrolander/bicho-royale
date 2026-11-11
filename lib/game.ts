@@ -159,7 +159,7 @@ export const modes: Mode[] = [
     count: 1,
     positions: 'all',
     description:
-      'Convenção desta demonstração: um grupo em qualquer uma das cinco posições, sem multiplicar acertos.',
+      'Regra: um grupo em qualquer uma das cinco posições, sem multiplicar acertos.',
     example: '25 → Vaca em uma das cinco posições',
   },
   {

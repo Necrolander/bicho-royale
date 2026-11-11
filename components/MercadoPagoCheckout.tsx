@@ -471,7 +471,6 @@ export default function MercadoPagoCheckout({
                     {loading ? 'Processando pagamento…' : 'Continuar para pagar'}
                   </button>
                   <button className="secondary" type="button" onClick={onClose}>Cancelar</button>
-                  <small>Pagamento de demonstração. Nenhuma cobrança real será feita.</small>
                 </div>
               </form>
             </div>

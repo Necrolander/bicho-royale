@@ -391,8 +391,8 @@ export default function Scratchcard({
                 <small>Saldo: {formatBRL(points)}</small>
               </aside>
               <div className="scratch-prize-note">
-                <b>✦ &nbsp; Prêmios demonstrativos</b>
-                <span>Esta versão usa saldo demonstrativo. As fotos são ilustrativas e não representam produtos resgatáveis.</span>
+                <b>✦ &nbsp; Prêmios da raspadinha</b>
+                <span>As imagens ilustram os prêmios em saldo para jogar.</span>
               </div>
               {registered && points < selectedGame.price && !card && (
                 <div className="scratch-insufficient">
@@ -412,8 +412,8 @@ export default function Scratchcard({
                 ) : (
                   <span>{selectedGame.icon}</span>
                 )}
-                  <b>{displayPrizeLabel(prize.label, prize.points)}</b>
-                  <small>{formatBRL(prize.points)} virtuais</small>
+                  {displayPrizeLabel(prize.label, prize.points) !== formatBRL(prize.points) && <b>{prize.label}</b>}
+                  <small>{formatBRL(prize.points)}</small>
                 </article>
               ))}
             </div>

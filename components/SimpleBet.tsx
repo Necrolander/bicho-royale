@@ -18,7 +18,6 @@ export function SimpleHome({ entries }: { entries: { id: string }[] }) {
       <h2>Faça seu jogo em 3 passos.</h2>
       <p>Escolha um bicho ou um número, informe o valor em R$ e confirme. Seu bilhete aparece na sua conta.</p>
       <Link className="primary simple-home-cta" href="/apostar">Apostar no bicho ou número <ArrowRight size={20} /></Link>
-      <small>Jogo com saldo demonstrativo em R$.</small>
     </section>
     <div className="simple-home-options">
       <Link className="surface" href="/apostar"><PawPrint size={30} /><b>Jogar no bicho</b><span>Escolha um ou mais dos 25 animais.</span><strong>Escolher bicho →</strong></Link>
@@ -108,7 +107,6 @@ export function SimpleBet({ rounds, balance, busy, act, notify, initialMode }: {
       {total > balance && <p role="alert">Saldo insuficiente para este jogo.</p>}
       <p className="simple-round-info"><Clock3 size={16} /> {round ? `Aceita jogos até ${new Date(round.locks_at).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}. O resultado aparece em Meus Bilhetes.` : 'Aguarde a próxima extração aberta.'}</p>
       <button className="primary full simple-confirm" disabled={busy || !canSubmit} onClick={submit}>{busy ? 'Salvando…' : 'Confirmar meu bilhete'} <ArrowRight size={18} /></button>
-      <small>Jogo com saldo demonstrativo em R$.</small>
       {receipt && <div className="simple-success" role="status"><CheckCircle2 size={25} /><b>{receipt.length} bilhete(s) salvo(s)!</b><p>Você pode acompanhar o resultado na sua conta.</p><Link href="/meus-bilhetes">Ver meus bilhetes →</Link></div>}
     </aside>
   </div>;

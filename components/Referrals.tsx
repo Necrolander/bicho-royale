@@ -28,7 +28,7 @@ export default function Referrals() {
       <h2>Indique e Ganhe</h2>
       {summary ? (
         <>
-          <p>Ganhe {formatBRL(summary.rewardCents)} em saldo demonstrativo quando uma pessoa criar uma conta pelo seu link.</p>
+          <p>Ganhe {formatBRL(summary.rewardCents)} em saldo para jogar quando uma pessoa criar uma conta pelo seu link.</p>
           <label className="field">Seu link de convite
             <input readOnly value={link} onFocus={(event) => event.currentTarget.select()} />
           </label>

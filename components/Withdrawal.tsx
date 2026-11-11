@@ -57,7 +57,7 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
     <section className="surface">
       <span className="eyebrow">SAQUES VIA PIX</span>
       <h2>Saques indisponíveis</h2>
-      <p>O saldo demonstrativo não pode ser sacado via Pix.</p>
+      <p>O saldo para jogar não pode ser sacado via Pix.</p>
       {message && <p role="alert">{message}</p>}
     </section>
     <section className="surface">

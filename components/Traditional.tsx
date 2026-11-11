@@ -306,7 +306,7 @@ export function ModeScreen({
       </section>
       <aside className="surface ticket-builder">
         <Ticket size={26} />
-        <h2>Seu bilhete virtual</h2>
+        <h2>Seu bilhete</h2>
         <label>
           Extração
           <select
@@ -358,7 +358,7 @@ export function ModeScreen({
           }
           onClick={submit}
         >
-          {busy ? 'Registrando…' : registered ? 'Registrar bilhete virtual' : 'Cadastre-se para registrar bilhete'}
+          {busy ? 'Registrando…' : registered ? 'Registrar bilhete' : 'Cadastre-se para registrar bilhete'}
         </button>
         <Link href="/extracoes">Ver agenda de extrações →</Link>
       </aside>
@@ -420,7 +420,7 @@ export function Extractions({
         <span className="eyebrow">AGENDA TRADICIONAL</span>
         <h2>Cinco prêmios. Uma extração verificável.</h2>
         <p>
-          Sorteios demonstrativos independentes da roleta. Cada prêmio registra milhar, centena,
+          Sorteios independentes da roleta. Cada prêmio registra milhar, centena,
           dezena e animal.
         </p>
         <div className="extraction-agenda">
@@ -652,7 +652,7 @@ export function Tickets({ version, notify }: { version: string; notify: Notice }
             {!list?.length && (
               <p>
                 Nenhum bilhete encontrado.{' '}
-                <Link href="/modalidades">Criar um bilhete virtual →</Link>
+                <Link href="/modalidades">Criar um bilhete →</Link>
               </p>
             )}
           </div>

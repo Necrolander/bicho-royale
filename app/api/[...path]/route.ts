@@ -486,7 +486,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     }
     if (path === 'withdrawals' && post) {
       await currentUser();
-      throw new ApiError(403, 'O saldo demonstrativo não pode ser sacado via Pix.');
+      throw new ApiError(403, 'O saldo para jogar não pode ser sacado via Pix.');
     }
     if (path === 'scratchcards' && post) {
       const user = requireRegistration((await currentUser())!);
@@ -518,7 +518,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         const current = one('SELECT points FROM users WHERE id=?', String(user.id));
         if (!current) throw new ApiError(401, 'Entre novamente na sua conta');
         if (Number(current.points) < price)
-          throw new ApiError(400, 'Saldo demonstrativo insuficiente');
+          throw new ApiError(400, 'Saldo insuficiente');
         const prize = pickScratchPrize(prizes, randomInt(10_000));
         const id = randomUUID(),
           createdAt = new Date().toISOString();
@@ -605,7 +605,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           {
             headers: {
               'Content-Type': 'text/csv; charset=utf-8',
-              'Content-Disposition': 'attachment; filename="estatisticas-simuladas.csv"',
+              'Content-Disposition': 'attachment; filename="estatisticas.csv"',
             },
           },
         );
@@ -676,7 +676,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           ...roulette.map((row) => ({ ...row, created_at: String(row.created_at), category: 'ROULETTE', action: 'Aposta na roleta', detail: { roundId: row.round_id, mode: row.mode, selection: JSON.parse(String(row.selection)), outcome: row.outcome ? JSON.parse(String(row.outcome)) : null, points: Number(row.points) } })),
           ...scratch.map((row) => ({ ...row, created_at: String(row.created_at), category: 'SCRATCH', action: 'Raspadinha jogada', detail: { gameId: row.game_id, gameName: gameNames.get(String(row.game_id)) || (row.game_id ? 'Raspadinha removida/antiga' : 'Raspadinha sem identificação'), costPoints: Number(row.price_points), prizePoints: Number(row.prize_points), prize: row.prize_label } })),
           ...pix.map((row) => ({ ...row, created_at: String(row.created_at), category: 'PIX', action: 'Depósito Pix', detail: { amountCents: Number(row.amount_cents), status: row.status, txid: row.txid, endToEndId: row.e2e_id, confirmedAt: row.confirmed_at } })),
-          ...movements.map((row) => ({ ...row, created_at: String(row.created_at), category: 'CREDITOS', action: 'Movimentação do saldo demonstrativo', detail: { points: Number(row.amount), balanceAfter: Number(row.balance) } })),
+          ...movements.map((row) => ({ ...row, created_at: String(row.created_at), category: 'CREDITOS', action: 'Movimentação do saldo para jogar', detail: { points: Number(row.amount), balanceAfter: Number(row.balance) } })),
         ].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
         const events = allEvents.slice(0, 1000);
         const rouletteWins = rouletteOutcomes.reduce((count, row) => {

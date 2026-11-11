@@ -141,7 +141,7 @@ export function Wheel({
     <div
       className={`wheel-stage ${spinning ? 'is-spinning' : ''}`}
       data-winning-group={revealed || undefined}
-      aria-label="Roleta demonstrativa de 25 animais"
+      aria-label="Roleta de 25 animais"
     >
       <div className="wheel-aura" />
       <div className="wheel-perspective">
@@ -174,7 +174,7 @@ export function Wheel({
         <div className="wheel-reveal" role="status">
           <AnimalArt id={revealed} size={48} />
           <div>
-            <small>RESULTADO SIMULADO</small>
+            <small>RESULTADO DA RODADA</small>
             <strong>{animals[revealed - 1].name}</strong>
             <span>{animals[revealed - 1].tens.join(' · ')}</span>
           </div>

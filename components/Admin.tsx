@@ -341,7 +341,7 @@ export default function Admin({
                     <div><small>R$ usados</small><b>{brl(report.roulette.pointsWagered)}</b></div>
                     <div><small>Resultados conferidos</small><b>{report.roulette.winningEntries.toLocaleString('pt-BR')}</b></div>
                   </div> : <p className="admin-inline-loading">O resumo será exibido assim que carregar.</p>}
-                  <p className="admin-help-text">Os valores desta área são R$ demonstrativos. Abra “Vendas e movimentações” para filtrar por data e apostador.</p>
+                  <p className="admin-help-text">Abra “Vendas e movimentações” para filtrar por data e apostador.</p>
                 </section>
                 <section className="surface admin-game-summary">
                   <div className="admin-section-title">
@@ -382,7 +382,7 @@ export default function Admin({
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Depósitos pendentes</span><b>{report ? `${brl(report.pix.pendingCents)} · ${report.pix.pendingCount}` : '—'}</b></div>
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Saques</span><b>Não configurados</b></div>
                   <div className="admin-status-line"><span className="admin-status-dot" /><span>Falhas de login</span><b>{data.counts.errors}</b></div>
-                  <p className="admin-help-text">Roleta e raspadinhas usam R$ de demonstração. Esta tela não representa saldo em dinheiro.</p>
+                  <p className="admin-help-text">Valores usados na roleta e nas raspadinhas.</p>
                   <button className="secondary admin-status-action" onClick={() => setTab('audit')}>Consultar auditoria <ArrowRight size={14} /></button>
                 </aside>
               </div>
@@ -419,7 +419,7 @@ export default function Admin({
                         <tr key={u.id}>
                           <td>
                             <b>{u.name}</b>
-                            <small>{u.email || 'Conta demonstrativa'}</small>
+                            <small>{u.email || 'Visitante'}</small>
                           </td>
                           <td>
                             {u.email ? (
@@ -915,7 +915,7 @@ export default function Admin({
             <div className="withdrawal-admin-layout">
               <section className="surface">
                 <h2>Solicitações de Saque via Pix</h2>
-                <p>O saldo demonstrativo não pode ser pago via Pix. Rejeite solicitações pendentes para devolver o valor ao saldo.</p>
+                <p>O saldo para jogar não pode ser pago via Pix. Rejeite solicitações pendentes para devolver o valor ao saldo.</p>
               </section>
               <section className="surface">
                 <div className="scroll-table">
@@ -990,7 +990,7 @@ export default function Admin({
               <section className="surface">
                 <h2>Financeiro e atividade dos apostadores</h2>
                 <p>
-                  Esta plataforma é demonstrativa. O saldo de jogo é demonstrativo; depósitos
+                  Os valores de jogo aparecem neste relatório. Depósitos
                   Pix aparecem separados em reais, e não há fluxo de saque configurado.
                 </p>
                 <div className="report-filters">

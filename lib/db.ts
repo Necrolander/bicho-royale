@@ -95,7 +95,7 @@ export function initialize() {
         platform: 'BICHOS VEGAS', paused: false, duration: 7, scheduleSeconds: 90,
         logo: '', accent: '#D4AF37', banner: '', locale: 'pt', sound: false,
         animations: true, rules: defaultRules,
-        announcement: 'Uma experiência de entretenimento com saldo demonstrativo em R$.',
+        announcement: 'Uma experiência de entretenimento com saldo para jogar em R$.',
         scratch: defaultScratchConfig,
       });
       const settingValues = defaults.map(() => '(?,?)').join(',');
@@ -106,7 +106,7 @@ export function initialize() {
       run(
         'INSERT OR IGNORE INTO content_pages VALUES(?,?,?)',
         'faq', 'Central de ajuda',
-        'O saldo em R$ é demonstrativo e não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Todos os sorteios são simulações independentes.',
+        'O saldo para jogar não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Os sorteios são independentes.',
       );
     });
     globalPg.royaleReady = true;
@@ -120,12 +120,12 @@ export function initialize() {
       platform: 'BICHOS VEGAS', paused: false, duration: 7, scheduleSeconds: 90,
       logo: '', accent: '#D4AF37', banner: '', locale: 'pt', sound: false,
       animations: true, rules: defaultRules,
-      announcement: 'Uma experiência de entretenimento com saldo demonstrativo em R$.',
+      announcement: 'Uma experiência de entretenimento com saldo para jogar em R$.',
       scratch: defaultScratchConfig,
     })) run('INSERT OR IGNORE INTO settings VALUES(?,?)', key, JSON.stringify(value));
     run('CREATE TABLE IF NOT EXISTS scratch_cards(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),idempotency_key TEXT NOT NULL,price_points INTEGER NOT NULL,prize_points INTEGER NOT NULL,prize_label TEXT NOT NULL,created_at TEXT NOT NULL,game_id TEXT,UNIQUE(user_id,idempotency_key))');
     run('ALTER TABLE scratch_cards ADD COLUMN IF NOT EXISTS game_id TEXT');
-    run('INSERT OR IGNORE INTO content_pages VALUES(?,?,?)', 'faq', 'Central de ajuda', 'O saldo em R$ é demonstrativo e não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Todos os sorteios são simulações independentes.');
+    run('INSERT OR IGNORE INTO content_pages VALUES(?,?,?)', 'faq', 'Central de ajuda', 'O saldo para jogar não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Os sorteios são independentes.');
   });
   globalPg.royaleReady = true;
 }
@@ -210,14 +210,14 @@ CREATE INDEX IF NOT EXISTS idx_mp_user ON mercadopago_deposits(user_id,created_a
     animations: true,
     rules: defaultRules,
     announcement:
-      'Uma experiência de entretenimento com saldo demonstrativo em R$.',
+      'Uma experiência de entretenimento com saldo para jogar em R$.',
     scratch: defaultScratchConfig,
   }))
     d.prepare('INSERT OR IGNORE INTO settings VALUES(?,?)').run(key, JSON.stringify(value));
   d.prepare('INSERT OR IGNORE INTO content_pages VALUES(?,?,?)').run(
     'faq',
     'Central de ajuda',
-    'O saldo em R$ é demonstrativo e não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Todos os sorteios são simulações independentes.',
+    'O saldo para jogar não permite transferência ou saque.\nComo conferir? Abra Resultados e selecione Verificar. A semente publicada deve reproduzir o compromisso e o resultado.\nAs extrações são oficiais? Não. Os sorteios são independentes.',
   );
   return d;
 }
@@ -289,8 +289,11 @@ export function settings() {
   const result = Object.fromEntries(
     all('SELECT * FROM settings').map((x) => [x.key, JSON.parse(String(x.value))]),
   );
-  if (result.announcement === 'Uma experiência de entretenimento. Todos os créditos são fictícios e não transferíveis.')
-    result.announcement = 'Uma experiência de entretenimento com saldo demonstrativo em R$.';
+  if (
+    result.announcement === 'Uma experiência de entretenimento. Todos os créditos são fictícios e não transferíveis.' ||
+    result.announcement === 'Uma experiência de entretenimento com saldo demonstrativo em R$.'
+  )
+    result.announcement = 'Uma experiência de entretenimento com saldo para jogar em R$.';
   const savedScratch = result.scratch as Partial<ScratchConfig> | undefined;
   if (savedScratch) {
     const savedGames = savedScratch.games ?? defaultScratchConfig.games ?? [];
