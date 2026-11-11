@@ -203,11 +203,12 @@ export default function DepositScreen({
         );
       } else {
         const mp = item as MPDeposit;
-        const isPending = mp.status === 'PENDING' || mp.status === 'CREATING';
+        const isPending = ['PENDING', 'CREATING', 'IN_PROCESS'].includes(mp.status.toUpperCase());
+        const method = mp.payment_method.toLowerCase();
 
         return (
           <div className="deposit-item" key={item.id}>
-            <div className="deposit-history-heading"><span>{mp.payment_method === 'credit_card' ? <CreditCard size={15} /> : mp.payment_method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(mp.payment_method)}</span><b>{formatBRL((mp.amount_cents || 0))}</b></div>
+            <div className="deposit-history-heading"><span>{method === 'credit_card' ? <CreditCard size={15} /> : method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(method)}</span><b>{formatBRL(mp.amount_cents || 0)}</b></div>
             <span className={`deposit-status ${mp.status.toLowerCase()}`}><i />{depositStatusLabel(mp.status)}</span>
             {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
               {mp.qr_code_base64 && (
@@ -223,18 +224,17 @@ export default function DepositScreen({
               )}
               {mp.ticket_url && (
                 <a href={mp.ticket_url} target="_blank" rel="noopener noreferrer" className="primary" style={{ display: 'inline-block', marginTop: 8 }}>
-                  Ver comprovante
+                  {method === 'boleto' ? 'Abrir boleto' : 'Ver comprovante'}
                 </a>
               )}
-              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
             {isPending && !mp.qr_code && !mp.qr_code_base64 && !mp.ticket_url && mp.init_point && <>
               <a href={mp.init_point} target="_blank" rel="noopener noreferrer" className="primary" style={{ display: 'inline-block', marginTop: 8 }}>
                 Acessar pagamento (Checkout Pro)
               </a>
-              <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> Verificar pagamento</button>
             </>}
-            {mp.status.toUpperCase() === 'CONFIRMED' && <span className="deposit-confirmed"><BadgeCheck size={14} /> Pagamento confirmado</span>}
+            {isPending && <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> {method === 'boleto' && !mp.ticket_url ? 'Buscar link do boleto' : 'Verificar pagamento'}</button>}
+            {['CONFIRMED', 'APPROVED'].includes(mp.status.toUpperCase()) && <span className="deposit-confirmed"><BadgeCheck size={14} /> Pagamento confirmado</span>}
           </div>
         );
       }

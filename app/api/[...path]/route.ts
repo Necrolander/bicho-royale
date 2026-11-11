@@ -12,6 +12,7 @@ import {
   passwordMatches,
   publicUser,
   rateLimit,
+  referralSummary,
   requireAdmin,
 } from '@/lib/auth';
 import { all, audit, initialize, one, run, settings, transaction, verifyAudit } from '@/lib/db';
@@ -159,6 +160,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           cpf: z.string().min(11).max(14).optional(),
           email: z.email().max(200),
           password: z.string().min(10).max(128),
+          referralCode: z.uuid().optional(),
         })
         .parse(payload);
       const email = body.email.toLowerCase();
@@ -173,7 +175,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
           throw new ApiError(409, 'E-mail já cadastrado');
         if (cpfClean && one('SELECT id FROM users WHERE cpf=?', cpfClean))
           throw new ApiError(409, 'CPF já cadastrado');
-        const id = createUser(body.name, email, body.password, 'USER', body.fullName, cpfClean);
+        const id = createUser(body.name, email, body.password, 'USER', body.fullName, cpfClean, body.referralCode);
         user = one('SELECT * FROM users WHERE id=?', id)!;
       } else {
         user = one('SELECT * FROM users WHERE email=?', email);
@@ -193,6 +195,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       if (token) run('DELETE FROM sessions WHERE id=?', sha256(token));
       (await cookies()).delete('royale_session');
       return json({ ok: true });
+    }
+    if (path === 'referrals' && !post) {
+      const user = requireRegistration((await currentUser())!);
+      return json(referralSummary(String(user.id)));
     }
     if (path === 'profile' && post) {
       const user = requireRegistration((await currentUser())!);
@@ -230,7 +236,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const user = (await currentUser())!;
       return json(
         all(
-          'SELECT id,external_reference,amount_cents,payment_method,status,init_point,sandbox_init_point,created_at,confirmed_at FROM mercadopago_deposits WHERE user_id=? ORDER BY created_at DESC',
+          'SELECT id,external_reference,amount_cents,payment_method,status,init_point,sandbox_init_point,created_at,confirmed_at,qr_code,qr_code_base64,ticket_url FROM mercadopago_deposits WHERE user_id=? ORDER BY created_at DESC',
           String(user.id),
         ),
       );
@@ -240,10 +246,9 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       return json(mercadoPagoCheckoutPublicKey());
     }
     if (path === 'mercadopago/deposits' && post) {
-      const user = (await currentUser())!;
+      const user = requireRegistration((await currentUser())!);
       const email = String(user.email);
       if (!email) throw new ApiError(403, 'Crie uma conta com e-mail para solicitar um pagamento Mercado Pago');
-      rateLimit(`mp:${user.id}`, 3, 3600000);
       const input = z.object({
         amountCents: z.number().int().min(100).max(100000),
         paymentMethod: z.enum(['pix', 'credit_card', 'boleto']).default('pix'),
@@ -253,9 +258,20 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         issuerId: z.string().optional(),
         identificationType: z.string().optional(),
         identificationNumber: z.string().optional(),
+        boletoAddress: z.object({
+          zip_code: z.string().regex(/^\d{8}$/),
+          street_name: z.string().trim().min(1).max(120),
+          street_number: z.string().trim().min(1).max(20),
+          neighborhood: z.string().trim().min(1).max(80),
+          city: z.string().trim().min(1).max(80),
+          federal_unit: z.string().regex(/^[A-Z]{2}$/),
+        }).optional(),
       }).parse(payload);
-      // Reuse the authenticated user's CPF for Pix when the payment form omits it.
-      const userCpf = String(one('SELECT cpf FROM users WHERE id=?', String(user.id))?.cpf || '');
+      const userCpf = normalizeCpf(String(user.cpf || ''));
+      if (input.paymentMethod === 'boleto' && (!input.boletoAddress || !isValidCpf(userCpf)))
+        throw new ApiError(400, 'Para gerar o boleto, cadastre um CPF válido no perfil e informe o endereço.');
+      rateLimit(`mp:${user.id}`, 3, 3600000);
+      const [firstName, ...surname] = String(user.full_name || user.name).trim().split(/\s+/);
 
       return json(await createMercadoPagoPayment(
         String(user.id),
@@ -265,10 +281,15 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         input.token,
         input.installments,
         input.issuerId,
-        input.identificationType && input.identificationNumber
-          ? { type: input.identificationType, number: input.identificationNumber }
-          : (input.paymentMethod === 'pix' && userCpf ? { type: 'CPF', number: userCpf.replace(/\D/g, '') } : undefined),
-        input.paymentMethodId
+        input.paymentMethod === 'boleto'
+          ? { type: 'CPF', number: userCpf }
+          : input.identificationType && input.identificationNumber
+            ? { type: input.identificationType, number: input.identificationNumber }
+            : input.paymentMethod === 'pix' && userCpf ? { type: 'CPF', number: userCpf } : undefined,
+        input.paymentMethodId,
+        input.paymentMethod === 'boleto' && input.boletoAddress
+          ? { first_name: firstName, last_name: surname.join(' '), address: input.boletoAddress }
+          : undefined
       ), 201);
     }
     if (path === 'mercadopago/refresh' && post) {

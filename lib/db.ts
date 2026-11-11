@@ -139,6 +139,8 @@ export function db() {
   d.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
  CREATE TABLE IF NOT EXISTS roles (name TEXT PRIMARY KEY);
  CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,full_name TEXT,cpf TEXT UNIQUE,email TEXT UNIQUE,password_hash TEXT,role TEXT NOT NULL REFERENCES roles(name),blocked INTEGER NOT NULL DEFAULT 0,points INTEGER NOT NULL DEFAULT 1000 CHECK(points>=0),created_at TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS referrals(invitee_id TEXT PRIMARY KEY REFERENCES users(id),referrer_id TEXT NOT NULL REFERENCES users(id),reward_cents INTEGER NOT NULL CHECK(reward_cents>0),created_at TEXT NOT NULL,CHECK(invitee_id<>referrer_id));
+ CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id,created_at);
  CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS animals(id INTEGER PRIMARY KEY CHECK(id BETWEEN 1 AND 25),name TEXT NOT NULL,tens TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS modes(id TEXT PRIMARY KEY,definition TEXT NOT NULL);

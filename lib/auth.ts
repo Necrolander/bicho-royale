@@ -111,9 +111,14 @@ export function createUser(
   role = 'USER',
   fullName?: string,
   cpf?: string,
+  referralCode?: string,
 ) {
   const id = randomUUID();
   transaction(() => {
+    const referrer = referralCode
+      ? one('SELECT id FROM users WHERE id=? AND email IS NOT NULL AND password_hash IS NOT NULL AND blocked=0', referralCode)
+      : undefined;
+    if (referralCode && !referrer) throw new ApiError(400, 'Link de indicação inválido ou indisponível.');
     run(
       'INSERT INTO users(id,name,full_name,cpf,email,password_hash,role,created_at) VALUES(?,?,?,?,?,?,?,?)',
       id,
@@ -135,9 +140,31 @@ export function createUser(
       new Date().toISOString(),
     );
     audit(id, 'USER_CREATED', { role, guest: !email });
+    if (referrer && email && password && cpf) {
+      const referrerId = String(referrer.id);
+      const now = new Date().toISOString();
+      run('INSERT INTO referrals(invitee_id,referrer_id,reward_cents,created_at) VALUES(?,?,?,?)', id, referrerId, referralRewardCents, now);
+      run('UPDATE users SET points=points+? WHERE id=?', referralRewardCents, referrerId);
+      const balance = Number(one('SELECT points FROM users WHERE id=?', referrerId)!.points);
+      run('INSERT INTO transactions VALUES(?,?,?,?,?,?)', randomUUID(), referrerId, null, referralRewardCents, balance, now);
+      audit(referrerId, 'REFERRAL_REWARDED', { inviteeId: id, amount: referralRewardCents });
+    }
   });
   return id;
 }
+export const referralRewardCents = 100;
+
+export function referralSummary(userId: string) {
+  const totals = one('SELECT count(*) AS count, COALESCE(sum(reward_cents),0) AS total FROM referrals WHERE referrer_id=?', userId)!;
+  return {
+    code: userId,
+    rewardCents: referralRewardCents,
+    count: Number(totals.count),
+    totalCents: Number(totals.total),
+    history: all('SELECT invitee_id, reward_cents, created_at FROM referrals WHERE referrer_id=? ORDER BY created_at DESC LIMIT 20', userId),
+  };
+}
+
 export function cleanupSessions() {
   run('DELETE FROM sessions WHERE expires_at<?', new Date().toISOString());
   all('SELECT id FROM users LIMIT 1');

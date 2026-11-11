@@ -14,6 +14,7 @@ interface CreatePaymentRequest {
   issuerId?: string;
   identificationType?: string;
   identificationNumber?: string;
+  boletoAddress?: Record<string, string>;
 }
 
 interface CreatePaymentResponse {
@@ -100,12 +101,11 @@ export default function MercadoPagoCheckout({
     };
   }, [paymentMethod]);
 
-  // Auto-create payment for PIX and boleto on mount
+  // Pix can be generated immediately. Boleto needs a billing address.
   useEffect(() => {
-    if (!paymentCreated.current && (paymentMethod === 'pix' || paymentMethod === 'boleto')) {
+    if (!paymentCreated.current && paymentMethod === 'pix') {
       paymentCreated.current = true;
-      if (paymentMethod === 'pix') handlePixPayment();
-      else handleBoletoPayment();
+      handlePixPayment();
     }
   }, [paymentMethod]);
 
@@ -213,12 +213,20 @@ export default function MercadoPagoCheckout({
     }
   };
 
-  const handleBoletoPayment = async () => {
+  const handleBoletoPayment = async (address: FormData) => {
+    if (paymentCreated.current) return;
+    paymentCreated.current = true;
     setLoading(true);
     try {
+      const boletoAddress = Object.fromEntries(
+        Array.from(address, ([key, value]) => [key, String(value).trim()]),
+      );
+      boletoAddress.zip_code = boletoAddress.zip_code.replace(/\D/g, '');
+      boletoAddress.federal_unit = boletoAddress.federal_unit.toUpperCase();
       const result = await createPayment({
         amountCents,
         paymentMethod: 'boleto',
+        boletoAddress,
       });
       handlePaymentResult(result);
     } catch (error) {
@@ -278,6 +286,7 @@ export default function MercadoPagoCheckout({
     setVerificationMessage('Consultando o Mercado Pago…');
     try {
       const result = await api('mercadopago/refresh', { id: paymentResult.id });
+      if (paymentMethod === 'boleto' && result.ticketUrl) setTicketUrl(result.ticketUrl);
       const currentStatus = String(result.status || '').toUpperCase();
       if (currentStatus === 'CONFIRMED' || currentStatus === 'APPROVED') {
         setStatus('approved');
@@ -383,17 +392,39 @@ export default function MercadoPagoCheckout({
 
           {paymentMethod === 'boleto' && (
             <div className="mp-boleto-payment">
+              <span className="mp-test-badge">AMBIENTE DE TESTE</span>
               <p className="mp-amount">{formatBRL(amountCents)}</p>
+              {!paymentResult && (
+                <form className="mp-card-form" onSubmit={(event) => {
+                  event.preventDefault();
+                  void handleBoletoPayment(new FormData(event.currentTarget));
+                }}>
+                  <div className="mp-card-fields-row">
+                    <label>CEP<input name="zip_code" autoComplete="postal-code" inputMode="numeric" pattern="[0-9]{5}-?[0-9]{3}" placeholder="00000-000" maxLength={9} required /></label>
+                    <label>UF<input name="federal_unit" autoComplete="address-level1" pattern="[A-Za-z]{2}" placeholder="SP" maxLength={2} required /></label>
+                  </div>
+                  <label>Rua<input name="street_name" autoComplete="address-line1" maxLength={120} required /></label>
+                  <div className="mp-card-fields-row">
+                    <label>Número<input name="street_number" placeholder="S/N se não houver" maxLength={20} required /></label>
+                    <label>Bairro<input name="neighborhood" maxLength={80} required /></label>
+                  </div>
+                  <label>Cidade<input name="city" autoComplete="address-level2" maxLength={80} required /></label>
+                  <button type="submit" className="primary">Gerar boleto de teste</button>
+                </form>
+              )}
               {ticketUrl && (
                 <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="primary mp-ticket-btn">
                   Abrir boleto
                 </a>
               )}
-              <p className="mp-instruction">
-                O boleto será aberto em nova aba. Pague em qualquer banco ou lotérica.
-              </p>
-              <button className="secondary" onClick={checkPaymentStatus}>Já paguei, verificar</button>
-              <button className="secondary" onClick={onClose}>Cancelar</button>
+              {paymentResult && (
+                <p className="mp-instruction">{ticketUrl ? 'O boleto de teste abre em uma nova aba.' : 'O Mercado Pago ainda não retornou o link. Consulte o boleto novamente.'}</p>
+              )}
+              {verificationMessage && <p role="status">{verificationMessage}</p>}
+              <div className="mp-checkout-actions">
+                {paymentResult && <button className="secondary" disabled={checkingPayment} onClick={checkPaymentStatus}>{ticketUrl ? 'Verificar status' : 'Buscar link do boleto'}</button>}
+                <button className="secondary" onClick={onClose}>Fechar</button>
+              </div>
             </div>
           )}
 

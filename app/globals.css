@@ -4825,3 +4825,14 @@ footer, footer small { color: #a6a6a6; }
 .deposit-confirmed { display: flex; align-items: center; gap: 6px; color: #cbff00; font-size: 9px; }
 @media (max-width: 850px) { .pix-deposit-layout { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .deposit-page-hero { align-items: stretch; flex-direction: column; gap: 16px; padding: 20px; }.deposit-balance-card { width: 100%; }.deposit-provider-tabs { grid-template-columns: 1fr; }.deposit-presets { grid-template-columns: repeat(2, minmax(0, 1fr)); }.deposit-unavailable { align-items: flex-start; flex-wrap: wrap; }.deposit-unavailable button { width: 100%; justify-content: center; }.deposit-mp-methods { grid-template-columns: 1fr; } }
+
+.scratch-prize-gallery article small {
+  background: #303b17;
+  color: #e0ff75;
+  border: 1px solid #768a30;
+  font-size: 11px;
+  font-weight: 800;
+}
+.referral-panel .field { margin: 14px 0; }
+.referral-panel ul { list-style: none; padding: 0; }
+.referral-panel li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-top: 1px solid var(--line); }

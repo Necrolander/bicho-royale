@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 process.env.DATABASE_PATH = `data/tests-${randomUUID()}.sqlite`;
 const { all, audit, db, one, run, transaction, verifyAudit } = await import('../lib/db');
-const { createUser, passwordHash, passwordMatches, requireRegistration, updateProfileName } = await import('../lib/auth');
+const { createUser, passwordHash, passwordMatches, requireRegistration, updateProfileName, referralSummary } = await import('../lib/auth');
 const { scheduleRound, enterRound, executeDraw, advanceRounds } = await import('../lib/rounds');
 const { ownTicket } = await import('../lib/tickets');
 const { enterGroupBatch } = await import('../lib/rounds');
@@ -20,6 +20,18 @@ beforeAll(() => {
   });
 });
 describe('Persistência e transações', () => {
+  it('registra a indicação e credita o saldo uma única vez junto com o cadastro', () => {
+    const referrer = createUser('Pessoa que indica', 'referrer@example.test', 'password-test-123');
+    const cpf = '52998224725';
+    const invitee = createUser('Convidado', 'invitee@example.test', 'password-test-123', 'USER', undefined, cpf, referrer);
+    expect(referralSummary(referrer)).toMatchObject({ count: 1, totalCents: 100 });
+    expect(referralSummary(invitee)).toMatchObject({ count: 0, totalCents: 0 });
+    expect(one('SELECT points FROM users WHERE id=?', referrer)?.points).toBe(1100);
+    expect(() => createUser('Duplicado', 'duplicate@example.test', 'password-test-123', 'USER', undefined, cpf, referrer)).toThrow();
+    expect(() => createUser('Convite inválido', 'invalid@example.test', 'password-test-123', 'USER', undefined, '12345678909', randomUUID())).toThrow('Link de indicação inválido');
+    expect(referralSummary(referrer)).toMatchObject({ count: 1, totalCents: 100 });
+    expect(one('SELECT points FROM users WHERE id=?', referrer)?.points).toBe(1100);
+  });
   it('bloqueia pagamento de saques antigos e devolve créditos somente uma vez', () => {
     const owner = createUser('Titular do histórico', 'withdrawal@example.test', 'password-test-123');
     const id = randomUUID();

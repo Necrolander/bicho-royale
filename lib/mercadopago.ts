@@ -178,7 +178,8 @@ export async function createMercadoPagoPayment(
   installments?: number,
   issuerId?: string,
   payerIdentification?: { type: string; number: string },
-  cardPaymentMethodId?: string
+  cardPaymentMethodId?: string,
+  boletoPayer?: { first_name: string; last_name: string; address: Record<string, string> },
 ): Promise<CreatePaymentResult> {
   const config = loadConfig();
   requirePayments(config);
@@ -196,6 +197,7 @@ export async function createMercadoPagoPayment(
   try {
     const payerData: Record<string, unknown> = {
       email: payerEmail,
+      ...boletoPayer,
       ...(payerIdentification ? { identification: payerIdentification } : {}),
     };
     // Para PIX, adicionar identification com CPF válido (11 dígitos)
@@ -236,7 +238,7 @@ export async function createMercadoPagoPayment(
     const qrCodeBase64 = (typeof transactionData?.qr_code_base64 === 'string' ? transactionData.qr_code_base64
       : typeof pointOfInteraction?.qr_code_base64 === 'string' ? pointOfInteraction.qr_code_base64
       : undefined) as string | undefined;
-    const ticketUrl = (typeof transactionData?.ticket_url === 'string' ? transactionData.ticket_url
+    const ticketUrl = paymentMethod === 'boleto' ? boletoLink(response) : (typeof transactionData?.ticket_url === 'string' ? transactionData.ticket_url
       : typeof pointOfInteraction?.ticket_url === 'string' ? pointOfInteraction.ticket_url
       : undefined) as string | undefined;
 
@@ -289,6 +291,17 @@ export async function createMercadoPagoPayment(
   }
 }
 
+function boletoLink(payment: Record<string, unknown>) {
+  const details = payment.transaction_details as { external_resource_url?: unknown } | undefined;
+  if (typeof details?.external_resource_url !== 'string') return undefined;
+  try {
+    const url = new URL(details.external_resource_url);
+    if (url.protocol === 'https:' && /^(?:[a-z0-9-]+\.)*mercadopago\.com(?:\.br)?$/i.test(url.hostname))
+      return url.href;
+  } catch {}
+  return undefined;
+}
+
 export async function refreshMercadoPagoDeposit(userId: string, id: string) {
   const row = one('SELECT * FROM mercadopago_deposits WHERE id=? AND user_id=?', id, userId);
   if (!row) throw new ApiError(404, 'Depósito não encontrado');
@@ -306,6 +319,11 @@ export async function refreshMercadoPagoDeposit(userId: string, id: string) {
   }
 
   const response = await mpRequest(config, 'GET', `/payments/${encodeURIComponent(String(paymentId))}`);
+  if (String(row.payment_method).toUpperCase() === 'BOLETO' &&
+      response.external_reference === row.external_reference && String(response.id) === String(paymentId)) {
+    const url = boletoLink(response);
+    if (url && url !== row.ticket_url) run('UPDATE mercadopago_deposits SET ticket_url=? WHERE id=? AND user_id=?', url, id, userId);
+  }
   return processPaymentResponse(userId, id, response);
 }
 

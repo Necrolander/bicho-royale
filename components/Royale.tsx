@@ -49,6 +49,7 @@ import { Tickets } from './Traditional';
 import type { ScratchConfig } from '@/lib/scratchcards';
 import DepositScreen from './Deposit';
 import WithdrawalScreen from './Withdrawal';
+import Referrals from './Referrals';
 type User = {
   id: string;
   name: string;
@@ -209,7 +210,7 @@ export default function Royale() {
     [rouletteAnimals, setRouletteAnimals] = useState<number[]>([16]),
     [selectedAnimals, setSelectedAnimals] = useState<number[]>([]),
     [search, setSearch] = useState(''),
-    [modal, setModal] = useState<'auth' | 'notifications' | 'tutorial' | null>(null),
+    [modal, setModal] = useState<'auth' | 'notifications' | 'tutorial' | 'referrals' | null>(null),
     [accountMenuOpen, setAccountMenuOpen] = useState(false),
     [menu, setMenu] = useState(false),
     [now, setNow] = useState(() => Date.now()),
@@ -222,6 +223,14 @@ export default function Royale() {
     [authMode, setAuthMode] = useState<'login' | 'register'>('login'),
     [passwordVisible, setPasswordVisible] = useState(false),
     [profileCpfInput, setProfileCpfInput] = useState('');
+  const [referralCode, setReferralCode] = useState<string>();
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('ref');
+    if (code && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(code)) {
+      setReferralCode(code.toLowerCase());
+      setAuthMode('register');
+    }
+  }, []);
   const initialized = useRef(false),
     previousRounds = useRef(new Set<string>());
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -545,6 +554,7 @@ export default function Royale() {
                     cpf: values.get('cpf') || undefined,
                     email: values.get('email'),
                     password: values.get('password'),
+                    referralCode: authMode === 'register' ? referralCode : undefined,
                   });
                   initialized.current = false;
                 });
@@ -727,7 +737,7 @@ export default function Royale() {
             <button className={activePage === 'scratch' ? 'active' : ''} onClick={() => navigate('scratch')}>
               <Ticket size={15} fill="currentColor" /> Raspadinhas
             </button>
-            <button className="header-referral" onClick={() => notify('O programa de indicação ainda não está disponível.') }>
+            <button className="header-referral" onClick={() => setModal('referrals')}>
               <Gift size={16} fill="currentColor" /> Indique e Ganhe
             </button>
             {data?.user?.role === 'ADMIN' && (
@@ -1432,7 +1442,7 @@ export default function Royale() {
                 ? 'Acesso à conta'
                 : modal === 'notifications'
                   ? 'Notificações'
-                  : 'Tutorial'
+                  : modal === 'referrals' ? 'Indique e Ganhe' : 'Tutorial'
             }
             onClick={(e) => e.stopPropagation()}
           >
@@ -1446,6 +1456,7 @@ export default function Royale() {
             >
               <X />
             </button>
+            {modal === 'referrals' && <Referrals />}
             {modal === 'auth' && (
               <>
                 <Crown className="gold-text" size={36} />
@@ -1468,6 +1479,7 @@ export default function Royale() {
                         cpf: f.get('cpf') || undefined,
                         email: f.get('email'),
                         password: f.get('password'),
+                        referralCode: authMode === 'register' ? referralCode : undefined,
                       });
                       initialized.current = false;
                       setModal(null);
