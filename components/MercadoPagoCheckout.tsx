@@ -59,6 +59,7 @@ export default function MercadoPagoCheckout({
   const [paymentResult, setPaymentResult] = useState<CreatePaymentResponse | null>(null);
   const [cardForm, setCardForm] = useState<any>(null);
   const [showCardForm, setShowCardForm] = useState(false);
+  const [isSandbox, setIsSandbox] = useState(false);
   const cardFormRef = useRef<HTMLFormElement>(null);
   const mpInstanceRef = useRef<any>(null);
   const paymentCreated = useRef(false);
@@ -70,8 +71,9 @@ export default function MercadoPagoCheckout({
     let script: HTMLScriptElement | undefined;
     const initialize = async () => {
       try {
-        const { publicKey } = await api('mercadopago/public-key');
-        if (!publicKey) throw new Error('A chave pública de testes do Mercado Pago não está configurada.');
+        const { publicKey, environment } = await api('mercadopago/public-key');
+        if (!publicKey) throw new Error('A chave pública do Mercado Pago não está configurada.');
+        setIsSandbox(environment === 'sandbox');
         if (!window.MercadoPago) {
           script = document.createElement('script');
           script.src = 'https://sdk.mercadopago.com/js/v2';
@@ -322,7 +324,7 @@ export default function MercadoPagoCheckout({
         <div className="mp-success">
           <div className="success-icon">✓</div>
           <h4>Pagamento aprovado!</h4>
-          <p>O pagamento de teste foi registrado no histórico.</p>
+          <p>Seu pagamento foi confirmado e registrado no histórico.</p>
           <button className="primary" onClick={onClose}>Fechar</button>
         </div>
       )}
@@ -351,7 +353,7 @@ export default function MercadoPagoCheckout({
           {paymentMethod === 'pix' && (
             <div className="mp-pix-payment">
               <div className="mp-checkout-summary">
-                <span className="mp-test-badge">SANDBOX · TESTE</span>
+                {isSandbox && <span className="mp-test-badge">SANDBOX · TESTE</span>}
                 <p className="mp-amount">{formatBRL(amountCents)}</p>
                 <span className="mp-pending-badge"><i /> Aguardando pagamento</span>
               </div>
@@ -392,7 +394,7 @@ export default function MercadoPagoCheckout({
 
           {paymentMethod === 'boleto' && (
             <div className="mp-boleto-payment">
-              <span className="mp-test-badge">AMBIENTE DE TESTE</span>
+              {isSandbox && <span className="mp-test-badge">AMBIENTE DE TESTE</span>}
               <p className="mp-amount">{formatBRL(amountCents)}</p>
               {!paymentResult && (
                 <form className="mp-card-form" onSubmit={(event) => {
@@ -409,7 +411,7 @@ export default function MercadoPagoCheckout({
                     <label>Bairro<input name="neighborhood" maxLength={80} required /></label>
                   </div>
                   <label>Cidade<input name="city" autoComplete="address-level2" maxLength={80} required /></label>
-                  <button type="submit" className="primary">Gerar boleto de teste</button>
+                  <button type="submit" className="primary">{loading ? 'Gerando boleto…' : 'Gerar boleto'}</button>
                 </form>
               )}
               {ticketUrl && (
@@ -435,10 +437,10 @@ export default function MercadoPagoCheckout({
                   <span>VALOR DO DEPÓSITO</span>
                   <strong>{formatBRL(amountCents)}</strong>
                 </div>
-                <span className="mp-card-secure">AMBIENTE DE TESTE</span>
+                <span className="mp-card-secure">{isSandbox ? 'AMBIENTE DE TESTE' : 'PAGAMENTO SEGURO'}</span>
               </div>
               <div className="mp-card-brand-bar" aria-label="Bandeiras de cartão disponíveis para teste">
-                <span className="mp-card-brand-caption">BANDEIRAS DE TESTE</span>
+                <span className="mp-card-brand-caption">{isSandbox ? 'BANDEIRAS DE TESTE' : 'BANDEIRAS ACEITAS'}</span>
                 <div className="mp-card-brand-list">
                   <span className="mp-brand-visa" aria-label="Visa">VISA</span>
                   <span className="mp-brand-mastercard" aria-label="Mastercard"><i /><i /><b>mastercard</b></span>

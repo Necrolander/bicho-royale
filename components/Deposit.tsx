@@ -110,7 +110,7 @@ export default function DepositScreen({
   const handleMPSuccess = async () => {
     setShowMPCheckout(false);
     await load();
-    setMessage('Pagamento de teste aprovado. Consulte o registro no histórico.');
+    setMessage('Pagamento aprovado. Consulte o registro no histórico.');
   };
 
   const handleMPError = (error: string) => {
