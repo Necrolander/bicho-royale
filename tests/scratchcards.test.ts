@@ -26,3 +26,31 @@ describe('sorteio demonstrativo da raspadinha', () => {
     expect(() => pickScratchPrize(defaultScratchConfig.prizes.slice(1), 0)).toThrow();
   });
 });
+
+
+describe('chance zero e distribuição exata', () => {
+  it.each([0,1,2])('um prêmio com 0% na posição %i nunca sai em nenhum dos 10.000 resultados', (position) => {
+    const zero={label:'Prêmio bloqueado',points:10000,chance:0};
+    const prizes=[{label:'Sem prêmio',points:0,chance:7500},{label:'Prêmio permitido',points:100,chance:2500}];
+    prizes.splice(position,0,zero);
+    const counts=new Map<number,number>();
+    for(let draw=0;draw<10000;draw++) {
+      const result=pickScratchPrize(prizes,draw);
+      expect(result).not.toBe(zero);
+      counts.set(result.points,(counts.get(result.points)||0)+1);
+    }
+    expect(counts.get(100)).toBe(2500);
+    expect(counts.get(0)).toBe(7500);
+    expect(counts.get(10000)||0).toBe(0);
+  });
+  it('100% sem prêmio e 0% para todos os prêmios nunca paga',()=>{
+    const prizes=[{label:'Zero inicial',points:100,chance:0},{label:'Sem prêmio',points:0,chance:10000},{label:'Zero final',points:10000,chance:0}];
+    for(let draw=0;draw<10000;draw++) expect(pickScratchPrize(prizes,draw).points).toBe(0);
+  });
+  it('0,01% corresponde exatamente a um resultado entre 10.000',()=>{
+    const prizes=[{label:'Sem prêmio',points:0,chance:9999},{label:'Prêmio raro',points:100,chance:1},{label:'Desativado',points:10000,chance:0}];
+    const results=Array.from({length:10000},(_,draw)=>pickScratchPrize(prizes,draw));
+    expect(results.filter(p=>p.points===100)).toHaveLength(1);
+    expect(results.filter(p=>p.points===10000)).toHaveLength(0);
+  });
+});
