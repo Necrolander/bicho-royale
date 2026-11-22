@@ -46,7 +46,7 @@ import {
   saveMercadoPagoConfig,
   testMercadoPagoConnection,
 } from '@/lib/mercadopago';
-import { listUserWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
+import { createWithdrawal, listUserWithdrawals, processWithdrawalAsAdmin } from '@/lib/withdrawals';
 import { defaultScratchConfig, pickScratchPrize } from '@/lib/scratchcards';
 import { isValidCpf, normalizeCpf } from '@/lib/cpf';
 export const runtime = 'nodejs';
@@ -496,8 +496,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       return json(await listUserWithdrawals(String(user.id)));
     }
     if (path === 'withdrawals' && post) {
-      await currentUser();
-      throw new ApiError(403, 'O saldo para jogar não pode ser sacado via Pix.');
+      const user = requireRegistration((await currentUser())!);
+      const input = z.object({ amountCents: z.number().int().min(2000).max(Number.MAX_SAFE_INTEGER), requestId: z.uuid() }).parse(payload);
+      rateLimit('withdrawals:' + user.id, 10, 60000);
+      return json(createWithdrawal(String(user.id), input.amountCents, input.requestId), 201);
     }
     if (path === 'scratchcards' && post) {
       const user = requireRegistration((await currentUser())!);

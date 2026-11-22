@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError } from './auth';
+import { isValidCpf, normalizeCpf } from './cpf';
 import { all, audit, one, run, transaction } from './db';
 
 export type Withdrawal = {
@@ -17,6 +18,30 @@ export type Withdrawal = {
   email?: string | null;
 };
 
+export function createWithdrawal(userId: string, amountCents: number, requestId: string) {
+  if (!Number.isSafeInteger(amountCents) || amountCents < 2000)
+    throw new ApiError(400, 'O saque mínimo é R$ 20,00.');
+  return transaction(() => {
+    const existing = one('SELECT * FROM withdrawals WHERE id=?', requestId);
+    if (existing) {
+      if (existing.user_id !== userId || Number(existing.amount_cents) !== amountCents)
+        throw new ApiError(409, 'Solicitação divergente.');
+      return { id: requestId };
+    }
+    const user = one('SELECT points,cpf,blocked FROM users WHERE id=?', userId);
+    if (!user || user.blocked) throw new ApiError(403, 'Conta indisponível.');
+    const cpf = normalizeCpf(String(user.cpf || ''));
+    if (!isValidCpf(cpf)) throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta.');
+    if (Number(user.points) < amountCents) throw new ApiError(400, 'Saldo insuficiente.');
+    const now = new Date().toISOString();
+    run('INSERT INTO withdrawals(id,user_id,amount_cents,status,cpf,pix_key,created_at) VALUES(?,?,?,?,?,?,?)', requestId,userId,amountCents,'PENDING',cpf,cpf,now);
+    run('UPDATE users SET points=points-? WHERE id=?',amountCents,userId);
+    run('INSERT INTO transactions VALUES(?,?,?,?,?,?)',randomUUID(),userId,null,-amountCents,Number(user.points)-amountCents,now);
+    audit(userId,'WITHDRAWAL_REQUESTED',{id:requestId,amountCents});
+    return { id:requestId };
+  });
+}
+
 export function listUserWithdrawals(userId: string) {
   return all(
     'SELECT id,amount_cents,status,created_at,processed_at,admin_note FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 200',
@@ -30,8 +55,6 @@ export function processWithdrawalAsAdmin(
   action: 'approve' | 'reject',
   adminNote?: string,
 ) {
-  if (action === 'approve')
-    throw new ApiError(403, 'O saldo para jogar não pode ser pago via Pix.');
 
   return transaction(() => {
     const withdrawal = one('SELECT * FROM withdrawals WHERE id=?', withdrawalId) as Withdrawal | undefined;
@@ -41,15 +64,17 @@ export function processWithdrawalAsAdmin(
     const now = new Date().toISOString();
     run(
       'UPDATE withdrawals SET status=?,processed_at=?,admin_id=?,admin_note=? WHERE id=?',
-      'REJECTED', now, adminId, adminNote || 'Rejeitado pelo administrador', withdrawalId,
+      action === 'approve' ? 'APPROVED' : 'REJECTED', now, adminId, adminNote || 'Processado pelo administrador', withdrawalId,
     );
+    if (action === 'reject') {
     run('UPDATE users SET points=points+? WHERE id=?', withdrawal.amount_cents, withdrawal.user_id);
     const balance = one('SELECT points FROM users WHERE id=?', withdrawal.user_id)!;
     run(
       'INSERT INTO transactions(id,user_id,entry_id,amount,balance,created_at) VALUES(?,?,?,?,?,?)',
       randomUUID(), withdrawal.user_id, null, withdrawal.amount_cents, Number(balance.points), now,
     );
-    audit(adminId, 'WITHDRAWAL_REJECTED', { id: withdrawalId, amountCents: withdrawal.amount_cents });
-    return { id: withdrawalId, status: 'REJECTED' };
+    }
+    audit(adminId, action === 'approve' ? 'WITHDRAWAL_APPROVED' : 'WITHDRAWAL_REJECTED', { id: withdrawalId, amountCents: withdrawal.amount_cents });
+    return { id: withdrawalId, status: action === 'approve' ? 'APPROVED' : 'REJECTED' };
   });
 }

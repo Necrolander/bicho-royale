@@ -915,7 +915,7 @@ export default function Admin({
             <div className="withdrawal-admin-layout">
               <section className="surface">
                 <h2>Solicitações de Saque via Pix</h2>
-                <p>O saldo para jogar não pode ser pago via Pix. Rejeite solicitações pendentes para devolver o valor ao saldo.</p>
+                <p>Saques a partir de R$ 20,00. Envie o Pix ao CPF informado em até 24 horas e registre o pagamento. Ao rejeitar, o valor retorna ao saldo.</p>
               </section>
               <section className="surface">
                 <div className="scroll-table">
@@ -958,7 +958,7 @@ export default function Admin({
                           </td>
                           <td>
                             {w.status === 'PENDING' && (
-                              <div style={{display: 'flex', gap: 4}}>
+                              <div style={{display: 'flex', gap: 4}}><button className="primary" disabled={busy} onClick={() => { if (confirm("Confirma que o Pix deste saque já foi enviado?")) void action("admin/withdrawals", {id:w.id,action:"approve",adminNote:"Pix enviado manualmente pelo administrador"}); }}>Marcar como pago</button>
                                 <button
                                   className="secondary"
                                   disabled={busy}
