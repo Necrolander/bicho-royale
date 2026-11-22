@@ -1,9 +1,11 @@
+import { testCpf } from './test-cpf';
 import { test, expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   const response = await page.request.post('/api/auth/register', {
     headers: { origin: 'http://127.0.0.1:3011' },
     data: {
       name: 'Pessoa teste',
+      cpf: testCpf(),
       email: `roleta-${Date.now()}@example.test`,
       password: 'senha-local-de-teste-123',
     },

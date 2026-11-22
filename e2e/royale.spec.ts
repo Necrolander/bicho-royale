@@ -1,3 +1,4 @@
+import { testCpf } from './test-cpf';
 import { test, expect } from '@playwright/test';
 import { commitment, draw } from '../lib/fairness';
 import { modes } from '../lib/game';
@@ -7,6 +8,7 @@ test.beforeEach(async ({ page }) => {
     headers: { origin: 'http://127.0.0.1:3011' },
     data: {
       name: 'Pessoa teste',
+      cpf: testCpf(),
       email: `roleta-${Date.now()}@example.test`,
       password: 'senha-local-de-teste-123',
     },

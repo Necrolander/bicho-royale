@@ -4,6 +4,12 @@ process.env.DATABASE_PATH = `data/e2e-${randomUUID()}.sqlite`;
 process.env.ADMIN_EMAIL = 'e2e-admin@example.test';
 process.env.ADMIN_PASSWORD = 'e2e-local-only-password-123';
 process.env.NEXT_DIST_DIR = '.next-e2e';
+// Keep local browser tests isolated from cloud credentials in .env.local.
+process.env.DATABASE_URL = '';
+process.env.POSTGRES_URL = '';
+process.env.DATABASE_PASSWORD = '';
+process.env.MERCADOPAGO_PAYMENTS_ENABLED = 'false';
+process.env.EFI_PAYMENTS_ENABLED = 'false';
 const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/seed.ts'], {
   env: process.env,
   stdio: 'inherit',

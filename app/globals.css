@@ -4963,3 +4963,22 @@ footer, footer small { color: #a6a6a6; }
 .deposit-empty b { color: #dedede; }
 .deposit-empty p { color: #969696; font-size: 12px; margin: 0; }
 @media(max-width:700px) { .deposit-workspace .pix-deposit-layout { grid-template-columns: 1fr; } .deposit-workspace .deposit-balance-card { width: 100%; min-width: 0; box-sizing: border-box; } .deposit-workspace .deposit-builder, .deposit-explainer { padding: 20px; } }
+.referral-dialog { width: min(780px, calc(100vw - 32px)); max-width: 780px; max-height: 90dvh; overflow-y: auto; box-sizing: border-box; }
+.referral-panel > h2 { font-size: clamp(24px,3vw,32px); margin: 12px 24px 10px 0; color: #fff; letter-spacing: -.03em; }
+.referral-intro,.referral-share p { color: #a6a6a6; line-height: 1.7; font-size: 13px; }
+.referral-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 24px 0; }
+.referral-metrics article { display: grid; gap: 10px; padding: 18px; border: 1px solid #ffffff18; border-radius: 12px; background: #101010; }
+.referral-metrics svg { color: #cbff00; }
+.referral-metrics small { color: #a6a6a6; font-size: 11px; }
+.referral-metrics strong { color: #fff; font-size: 24px; }
+.referral-share { border: 1px solid #cbff0035; background: #cbff0005; border-radius: 12px; padding: 20px; }
+.referral-share h3 { color: #fff; margin: 0; }
+.referral-share .primary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.referral-share input { width: 100%; box-sizing: border-box; font-size: 12px; }
+.referral-rules { display: flex; gap: 12px; margin: 22px 0; }
+.referral-rules svg { color: #cbff00; flex: 0 0 19px; margin-top: 3px; }
+.referral-rules p { margin: 0; color: #b5b5b5; line-height: 1.7; font-size: 12px; }
+.referral-empty { display: grid; justify-items: center; gap: 12px; padding: 24px 16px; border: 1px dashed #ffffff20; border-radius: 10px; text-align: center; }
+.referral-empty svg { color: #cbff00; }
+.referral-empty p { color: #969696; margin: 0; font-size: 12px; }
+@media(max-width:520px) { .referral-metrics { grid-template-columns: 1fr; } .referral-metrics article { gap: 6px; } }

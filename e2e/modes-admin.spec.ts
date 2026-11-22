@@ -1,3 +1,4 @@
+import { testCpf } from './test-cpf';
 import { test, expect } from '@playwright/test';
 test('administração de modalidades persiste e preserva extrações existentes', async ({ page }) => {
   const origin = 'http://127.0.0.1:3011';
@@ -5,6 +6,7 @@ test('administração de modalidades persiste e preserva extrações existentes'
     headers: { origin },
     data: {
       name: 'Pessoa teste',
+      cpf: testCpf(),
       email: `modalidades-${Date.now()}@example.test`,
       password: 'senha-local-de-teste-123',
     },

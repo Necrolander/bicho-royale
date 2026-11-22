@@ -672,6 +672,7 @@ export default function Royale() {
         </button>
         <div className="sidebar-section">MENU PRINCIPAL</div>
         <nav>
+          <button className="nav-item" onClick={() => { setMenu(false); setModal('referrals'); }}><Gift size={19} /><span>Indique e Ganhe</span></button>
           {navigation.map((n) => (
             <button
               key={n.id}
@@ -1434,7 +1435,7 @@ export default function Royale() {
           }}
         >
           <section
-            className="modal surface"
+            className={`modal surface ${modal === 'referrals' ? 'referral-dialog' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={
