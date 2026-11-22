@@ -212,12 +212,12 @@ export default function DepositScreen({
             <div className="deposit-history-heading"><span><QrCode size={15} /> Pix Efí</span><b>{formatBRL((pix.amount_cents || pix.amountCents || 0))}</b></div>
             <span className={`deposit-status ${pix.status.toLowerCase()}`}><i />{depositStatusLabel(pix.status)}</span>
             {pix.created_at && <p className="deposit-record-date">{new Date(pix.created_at).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'})} · Pedido #{pix.id.slice(0,8).toUpperCase()}</p>}
-            {pix.status.toUpperCase() === 'PENDING' && code && <>
+            {pix.status.toUpperCase() === 'PENDING' && code && <details className="deposit-payment-details"><summary>Ver opções de pagamento</summary><div className="deposit-payment-content">
               <div className="deposit-qr-wrap"><QRCodeSVG value={code} size={170} marginSize={2} /></div>
               <label className="deposit-copy-label">Pix copia e cola<textarea readOnly aria-label="Pix copia e cola" value={code} rows={3} /></label>
               <button className="secondary" onClick={() => void copyPix(code, setMessage)}>Copiar código Pix</button>
               <button className="secondary" disabled={busy} onClick={() => void refreshPix(pix.id)}><Clock3 size={14} /> Verificar pagamento</button>
-            </>}
+            </div></details>}
           </div>
         );
       } else {
@@ -230,7 +230,8 @@ export default function DepositScreen({
             <div className="deposit-history-heading"><span>{method === 'credit_card' ? <CreditCard size={15} /> : method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(method)}</span><b>{formatBRL(mp.amount_cents || 0)}</b></div>
             <span className={`deposit-status ${mp.status.toLowerCase()}`}><i />{depositStatusLabel(mp.status)}</span>
             {mp.created_at && <p className="deposit-record-date">{new Date(mp.created_at).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'})} · Pedido #{mp.id.slice(0,8).toUpperCase()}</p>}
-            {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
+            {isPending && <details className="deposit-payment-details"><summary>Ver opções de pagamento</summary><div className="deposit-payment-content">
+            {(mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
               {mp.qr_code_base64 && (
                 <div style={{ marginTop: 8, textAlign: 'center' }}>
                   <img src={`data:image/png;base64,${mp.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 200 }} />
@@ -254,7 +255,7 @@ export default function DepositScreen({
               </a>
             </>}
             {isPending && <button className="secondary" disabled={busy} onClick={() => void refreshMP(mp.id)}><Clock3 size={14} /> {method === 'boleto' && !mp.ticket_url ? 'Buscar link do boleto' : 'Verificar pagamento'}</button>}
-            {['CONFIRMED', 'APPROVED'].includes(mp.status.toUpperCase()) && <span className="deposit-confirmed"><BadgeCheck size={14} /> Pagamento confirmado</span>}
+            </div></details>}
           </div>
         );
       }

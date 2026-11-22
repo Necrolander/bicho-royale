@@ -4982,3 +4982,21 @@ footer, footer small { color: #a6a6a6; }
 .referral-empty svg { color: #cbff00; }
 .referral-empty p { color: #969696; margin: 0; font-size: 12px; }
 @media(max-width:520px) { .referral-metrics { grid-template-columns: 1fr; } .referral-metrics article { gap: 6px; } }
+/* Deposit history uses compact rows, with payment details opened on demand. */
+.deposit-workspace .deposit-history-list { display: flex; flex-direction: column; gap: 12px; }
+.deposit-workspace .deposit-item { display: grid; grid-template-columns: minmax(0,1fr) auto; align-content: start; align-items: center; gap: 10px 20px; padding: 20px; }
+.deposit-workspace .deposit-history-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; min-width: 0; }
+.deposit-workspace .deposit-history-heading > span { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #bcbcbc; }
+.deposit-workspace .deposit-history-heading b { white-space: nowrap; font-size: 22px; }
+.deposit-workspace .deposit-status { height: auto; min-height: 0; max-height: none; padding: 7px 10px; align-self: center; margin: 0; font-size: 11px; line-height: 1.3; white-space: nowrap; border-radius: 999px; }
+.deposit-workspace .deposit-record-date { grid-column: 1 / -1; margin: 0; font-size: 11px; color: #939393; }
+.deposit-workspace .deposit-item svg { background: transparent; border-radius: 0; flex-shrink: 0; }
+.deposit-workspace .deposit-status.error { color: #ffb0a5; border-color: #ff8b7b40; background: #ff8b7b0c; }
+.deposit-payment-details { grid-column: 1 / -1; border-top: 1px solid #ffffff12; margin-top: 5px; padding-top: 12px; }
+.deposit-payment-details summary { width: fit-content; cursor: pointer; color: #cbff00; font-size: 12px; padding: 5px 0; }
+.deposit-payment-content { display: grid; gap: 12px; max-width: 420px; margin-top: 15px; }
+.deposit-payment-content textarea { box-sizing: border-box; resize: vertical; font-size: 12px; min-height: 74px; }
+.deposit-payment-content img { display: block; width: 200px; height: auto; padding: 12px; border-radius: 10px; background: #fff; margin: auto; box-sizing: border-box; }
+.deposit-payment-content button, .deposit-payment-content a { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; font-size: 12px; }
+.deposit-payment-content .deposit-qr-wrap svg { background: #fff; }
+@media(max-width:600px) { .deposit-workspace .deposit-item { grid-template-columns: 1fr; padding: 16px; } .deposit-workspace .deposit-status { justify-self: start; } .deposit-workspace .deposit-history-heading b { font-size: 20px; } .deposit-workspace .deposit-history-heading > span { font-size: 11px; } }
