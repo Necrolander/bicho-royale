@@ -10,6 +10,7 @@ const statusLabels: Record<string, string> = { PENDING: 'Aguardando pagamento', 
 type Withdrawal = {
   id: string;
   amount_cents: number;
+  pix_key: string | null;
   status: string;
   created_at: string;
   processed_at: string | null;
@@ -50,6 +51,7 @@ export default function WithdrawalScreen({ registered, balance, cpf, refresh }: 
             <span className={`withdrawal-status withdrawal-status-${item.status.toLowerCase()}`}><Icon size={14} />{statusLabels[item.status] || 'Em análise'}</span>
           </div>
           <div className="withdrawal-details">
+            <div className="withdrawal-pix-destination"><small>Destino Pix</small><span>{item.pix_key || 'Destino não registrado neste pedido'}</span></div>
             <div><small>Protocolo</small><span title={item.id}>#{item.id.slice(0, 8).toUpperCase()}</span></div><div><small>Solicitado em</small><time dateTime={item.created_at}>{dateFormat.format(new Date(item.created_at))}</time></div>
             {item.status === 'PENDING' && <div><small>Pagamento previsto até</small><time dateTime={deadline.toISOString()}>{dateFormat.format(deadline)}</time></div>}
             {item.processed_at && <div><small>Processado em</small><time dateTime={item.processed_at}>{dateFormat.format(new Date(item.processed_at))}</time></div>}

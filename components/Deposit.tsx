@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from './Royale';
 import MercadoPagoCheckout from './MercadoPagoCheckout';
-import { ArrowRight, BadgeCheck, CircleAlert, Clock3, CreditCard, QrCode, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowRight, CircleAlert, Clock3, CreditCard, QrCode, ShieldCheck, Wallet } from 'lucide-react';
 
 type PixDeposit = { id: string; txid: string; amount_cents: number; amountCents?: number; status: string; copy_paste?: string; copyPaste?: string; created_at?: string };
 type MPDeposit = {

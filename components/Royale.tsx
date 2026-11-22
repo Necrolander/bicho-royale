@@ -968,7 +968,7 @@ export default function Royale() {
                   </div>
                   <div className="home-trust-row">
                     <div><ShieldCheck size={17} /><span><b>Resultados publicados</b><small>Confira os giros recentes</small></span></div>
-                    <div><Wallet size={17} /><span><b>Saldo para jogar</b><small>Sem depósitos ou saques reais</small></span></div>
+                    <div><Wallet size={17} /><span><b>Saldo para jogar</b><small>Acompanhe depósitos e saques pela conta</small></span></div>
                     <div><Ticket size={17} /><span><b>{data.scratchCards.length} cartões registrados</b><small>Seu histórico fica na conta</small></span></div>
                   </div>
                   {latestRouletteResult?.result?.group && <button className="home-results-link" onClick={() => navigate('roulette')}>Ver todos os resultados da roletinha <ArrowRight size={15} /></button>}
@@ -1405,7 +1405,7 @@ export default function Royale() {
             onClick={() => navigate(n.id)}
           >
             <n.icon size={20} />
-            <span>{n.id === 'scratch' ? 'Raspadinha' : 'Roleta'}</span>
+            <span>{n.id === 'scratch' ? 'Raspadinha' : n.id === 'deposit' ? 'Depositar' : 'Roleta'}</span>
           </button>
         ))}
       </nav>

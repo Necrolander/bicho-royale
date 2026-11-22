@@ -23,20 +23,22 @@ test('rotas tradicionais encaminham para a Roleta Vegas', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Roleta Vegas' })).toBeVisible();
   }
 });
-test('cabeçalho horizontal navega entre Início, Roletinha e Raspadinhas', async ({ page }) => {
+test('cabeçalho horizontal navega entre Início, Roletinha e Raspadinhas', async ({ page, isMobile }) => {
   await page.goto('/roleta');
+  if (isMobile) await page.getByRole('button',{name:'Abrir menu',exact:true}).click();
   const nav = page.getByRole('navigation', { name: 'Navegação principal' });
   await expect(nav.getByRole('button', { name: 'Início' })).toBeVisible();
   await expect(nav.getByRole('button', { name: 'Roletinha' })).toBeVisible();
   await expect(nav.getByRole('button', { name: 'Raspadinhas' })).toBeVisible();
-  await page.getByRole('button', { name: 'Raspadinhas' }).click();
+  await nav.getByRole('button', { name: 'Raspadinhas' }).click();
   await expect(page).toHaveURL(/\/raspadinha$/);
   await expect(page.getByRole('heading', { name: 'Raspadinha Vegas' })).toBeVisible();
+  if (isMobile) await page.getByRole('button',{name:'Abrir menu',exact:true}).click();
   await nav.getByRole('button', { name: 'Roletinha' }).click();
   await expect(page).toHaveURL(/\/roleta$/);
   await expect(page.getByRole('heading', { name: 'Roleta Vegas' })).toBeVisible();
 });
-test('raspadinha tem página própria, cobra créditos fictícios e revela o resultado ao raspar', async ({
+test('raspadinha tem página própria, cobra valor em R$ e revela o resultado ao raspar', async ({
   page,
 }) => {
   await page.goto('/raspadinha');
@@ -47,7 +49,7 @@ test('raspadinha tem página própria, cobra créditos fictícios e revela o res
   await page.getByRole('button', { name: 'Ver raspadinha' }).first().click();
   await expect(page.getByRole('heading', { name: 'Ouro Vegas' })).toBeVisible();
   await expect(page.locator('.scratch-grid-nine').first()).toBeVisible();
-  await page.getByRole('button', { name: /Comprar por \d+ créditos/ }).click();
+  await page.getByRole('button', { name: /Comprar por R\$/ }).click();
   await expect(page.getByRole('heading', { name: 'Ouro Vegas' }).last()).toBeVisible();
   const prizePhotos = page.locator('.scratch-match-cell img[src*="vegas-prize-"]');
   await expect(prizePhotos).toHaveCount(9);
@@ -71,12 +73,14 @@ test('raspadinha tem página própria, cobra créditos fictícios e revela o res
       await page.mouse.move(scratchArea!.x + (step * (scratchArea!.width - 10)) / 18, y);
     }
     await page.mouse.up();
+    // Revealing removes the canvas; further mouse gestures would hit the page below.
+    if (await page.locator('.scratch-confirm').count()) break;
   }
   await expect(page.locator('.scratch-confirm')).toContainText('Resultado:');
   const data = await (await page.request.get('/api/bootstrap')).json();
   expect(data.scratchCards).toHaveLength(1);
   await expect(page.locator('.prize-ticker')).toBeVisible();
-  await expect(page.locator('.prize-ticker')).toContainText('créditos virtuais');
+  await expect(page.locator('.prize-ticker')).toContainText('R$');
   expect(data.recentWins.every((item: Record<string, unknown>) => !('name' in item))).toBeTruthy();
   expect(data.user.points).toBe(
     1000 - data.scratchCards[0].price_points + data.scratchCards[0].prize_points,
@@ -85,11 +89,11 @@ test('raspadinha tem página própria, cobra créditos fictícios e revela o res
 test('depósitos abrem em uma página própria e informam o status do Pix', async ({ page }) => {
   await page.goto('/depositar');
   await expect(page).toHaveURL(/\/depositar$/);
-  await expect(page.getByRole('heading', { name: 'Depósitos' })).toBeVisible();
-  await expect(page.getByText(/Depósitos ainda não estão disponíveis/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Seu saldo, pronto para o próximo jogo.' })).toBeVisible();
+  await expect(page.getByText(/Depósitos temporariamente indisponíveis/)).toBeVisible();
 });
 test('jornada completa, persistência, permissões e publicação', async ({ page, request }) => {
-  await page.goto('/');
+  await page.goto('/roleta');
   await expect(page.getByRole('heading', { name: 'Roleta Vegas' })).toBeVisible();
   await page.goto('/roleta');
   await expect(page.getByRole('button', { name: 'Participar da rodada' })).toBeEnabled();
@@ -120,7 +124,7 @@ test('jornada completa, persistência, permissões e publicação', async ({ pag
   expect(wrongOrigin.status()).toBe(403);
   const admin = await request.post('/api/auth/login', {
     headers: { origin },
-    data: { email: 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
+    data: { email: test.info().project.name === 'mobile' ? 'e2e-admin-mobile@example.test' : 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
   });
   expect(admin.ok()).toBeTruthy();
   const publish = await request.post('/api/admin/rounds', {
@@ -169,7 +173,7 @@ test('cadastro, login e isolamento da conta', async ({ page }) => {
   const email = `royale-${Date.now()}@example.test`;
   const registered = await page.request.post('/api/auth/register', {
     headers: { origin: 'http://127.0.0.1:3011' },
-    data: { name: 'Membro de teste', email, password: 'local-test-password-123' },
+    data: { name: 'Membro de teste', cpf:testCpf(), email, password: 'local-test-password-123' },
   });
   expect(registered.ok()).toBeTruthy();
   const denied = await page.request.get('/api/admin');
@@ -178,11 +182,11 @@ test('cadastro, login e isolamento da conta', async ({ page }) => {
   expect(b.user.points).toBe(1000);
   expect(b.entries).toHaveLength(0);
 });
-test('relatórios administrativos separam depósitos Pix e créditos demonstrativos', async ({ page }) => {
+test('relatórios administrativos separam depósitos Pix e movimentações em R$', async ({ page }) => {
   const origin = 'http://127.0.0.1:3011';
   const login = await page.request.post('/api/auth/login', {
     headers: { origin },
-    data: { email: 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
+    data: { email: test.info().project.name === 'mobile' ? 'e2e-admin-mobile@example.test' : 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
   });
   expect(login.ok()).toBeTruthy();
   const response = await page.request.get('/api/admin/reports');
@@ -191,7 +195,7 @@ test('relatórios administrativos separam depósitos Pix e créditos demonstrati
   expect(reports.roulette).toMatchObject({ entries: expect.any(Number), pointsWagered: expect.any(Number) });
   expect(reports.scratch).toMatchObject({ cards: expect.any(Number), pointsSpent: expect.any(Number), prizePoints: expect.any(Number) });
   expect(reports.pix).toMatchObject({ confirmedCents: expect.any(Number), pendingCents: expect.any(Number) });
-  expect(reports.withdrawals).toEqual({ count: 0, amountCents: 0, configured: false });
+  expect(reports.withdrawals).toMatchObject({ confirmedCents: expect.any(Number), pendingCents: expect.any(Number), configured: true });
   expect(reports.events).toEqual(expect.any(Array));
   const filtered = await (await page.request.get('/api/admin/reports?q=e2e-admin')).json();
   expect(filtered.events.every((event: { name: string }) => event.name.toLowerCase().includes('admin'))).toBe(true);
@@ -199,15 +203,17 @@ test('relatórios administrativos separam depósitos Pix e créditos demonstrati
   await page.getByRole('button', { name: 'Vendas e movimentações', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Financeiro e atividade dos apostadores' })).toBeVisible();
   await expect(page.getByText('PIX · depósitos confirmados')).toBeVisible();
-  await expect(page.getByText('SAQUES · não configurados')).toBeVisible();
+  await expect(page.getByText('SAQUES · pagamentos')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 test('painel administrativo, regras congeladas, conteúdo e cancelamento', async ({ page }) => {
   const origin = 'http://127.0.0.1:3011';
   await page.request.post('/api/auth/login', {
     headers: { origin },
-    data: { email: 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
+    data: { email: test.info().project.name === 'mobile' ? 'e2e-admin-mobile@example.test' : 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
   });
+  const initial = await (await page.request.get('/api/admin')).json();
+  const originalRound = initial.rounds.find((r: {state:string}) => r.state === 'OPEN');
   await page.goto('/admin');
   await expect(page.getByText('RBAC ATIVO', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Configurações', exact: true }).click();
@@ -221,8 +227,8 @@ test('painel administrativo, regras congeladas, conteúdo e cancelamento', async
   ).toBeVisible();
   const admin = await (await page.request.get('/api/admin')).json();
   expect(admin.settings.rules.positions).toBe(3);
-  const old = admin.rounds.find((r: { state: string }) => r.state === 'OPEN');
-  expect(old.rules.positions).toBe(5);
+  const old = admin.rounds.find((r: { id: string }) => r.id === originalRound.id);
+  expect(old.rules).toEqual(originalRound.rules);
   const schedule = await page.request.post('/api/admin/rounds', {
     headers: { origin },
     data: {
@@ -248,7 +254,7 @@ test('painel administrativo, regras congeladas, conteúdo e cancelamento', async
     .locator('.admin-tabs')
     .getByRole('button', { name: 'Raspadinha', exact: true })
     .click();
-  await page.getByRole('spinbutton', { name: 'Preço da raspadinha Ouro Vegas' }).fill('60');
+  await page.getByRole('spinbutton', { name: 'Preço da raspadinha Ouro Vegas' }).fill('0.60');
   await page.getByRole('button', { name: 'Criar raspadinha' }).click();
   const newScratch = page.locator('.scratch-admin-game').last();
   await newScratch.getByLabel('Nome', { exact: true }).fill('Cartão de teste');
@@ -278,6 +284,7 @@ test('painel administrativo, regras congeladas, conteúdo e cancelamento', async
   await expect(
     page.getByRole('status').filter({ hasText: 'Operação administrativa' }),
   ).toBeVisible();
+  expect((await page.request.post('/api/admin/settings', {headers:{origin},data:initial.settings})).ok()).toBeTruthy();
   await page.goto('/ajuda');
   await expect(page).toHaveURL(/\/roleta$/);
   await expect(page.getByRole('heading', { name: 'Roleta Vegas' })).toBeVisible();
@@ -287,34 +294,36 @@ test('painel administrativo, regras congeladas, conteúdo e cancelamento', async
 test('visão geral administrativa explica os indicadores e separa os dois jogos', async ({ page }) => {
   await page.request.post('/api/auth/login', {
     headers: { origin: 'http://127.0.0.1:3011' },
-    data: { email: 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
+    data: { email: test.info().project.name === 'mobile' ? 'e2e-admin-mobile@example.test' : 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
   });
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Resumo da operação' })).toBeVisible();
   await expect(page.locator('.admin-overview-metrics .admin-stat-card')).toHaveCount(4);
   await expect(page.getByRole('heading', { name: 'Roletinha', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Raspadinhas', exact: true })).toBeVisible();
-  await expect(page.getByText('Esta tela não representa saldo em dinheiro.')).toBeVisible();
+  await expect(page.locator('.admin-game-numbers').first()).toContainText('R$');
   await expect(page.getByText('Atividade recente')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Ver detalhes' }).first().click();
   await expect(page.getByRole('heading', { name: 'Financeiro e atividade dos apostadores' })).toBeVisible();
   await page.getByRole('button', { name: 'Saques', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Solicitações de saque' })).toBeVisible();
-  await expect(page.getByText('Pedidos registrados')).toBeVisible();
-  await expect(page.getByText('CPF não coletado.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saques via Pix', exact:true })).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:'CPF / destino Pix'})).toBeVisible();
+  await expect(page.getByRole('columnheader',{name:'Prazo de 24 horas'})).toBeVisible();
 });
 
-test('botão Sacar abre uma página demonstrativa com prazo e aviso de privacidade', async ({ page }) => {
+test('botão Sacar abre a transferência Pix com prazo e CPF cadastrado', async ({ page }) => {
   await page.goto('/roleta');
-  await page.getByRole('button', { name: 'Sacar' }).click();
+  await page.getByRole('button', { name: 'Sacar',exact:true }).click();
   await expect(page).toHaveURL(/\/saques$/);
-  await expect(page.getByRole('heading', { name: 'Solicitações de saque' })).toBeVisible();
-  await expect(page.getByText('Até 24 horas')).toBeVisible();
-  await expect(page.getByText('Não solicitados')).toBeVisible();
-  await expect(page.getByText('Nenhuma solicitação enviada')).toBeVisible();
-  await expect(page.getByRole('textbox')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Transferir via Pix' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Histórico de solicitações' })).toBeVisible();
+  await expect(page.getByText('Pagamento em até 24 horas',{exact:true})).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Destino',exact:true})).toHaveValue('cpf');
+  await page.getByRole('combobox',{name:'Destino',exact:true}).selectOption('custom');
+  await expect(page.getByRole('textbox',{name:'Chave Pix',exact:true})).toBeVisible();
 });
+
 test('rotas e acessibilidade da conta', async ({ page }) => {
   await page.goto('/animais');
   await expect(page).toHaveURL(/\/roleta$/);
@@ -323,8 +332,8 @@ test('rotas e acessibilidade da conta', async ({ page }) => {
   await expect(page).toHaveURL(/\/roleta$/);
   await expect(page.getByRole('button', { name: /YouTube/i })).toHaveCount(0);
   await page.goto('/perfil');
-  await expect(page).toHaveURL(/\/roleta$/);
-  await expect(page.getByRole('heading', { name: 'Roleta Vegas' })).toBeVisible();
+  await expect(page).toHaveURL(/\/perfil$/);
+  await expect(page.locator('.balance')).toContainText('R$');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

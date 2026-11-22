@@ -3,6 +3,16 @@ import { formatBRL } from '@/lib/money';
 import { useEffect, useRef, useState } from 'react';
 import { api } from './Royale';
 
+interface CardFormData {
+  token: string; installments: string; paymentMethodId: string; issuerId: string;
+  identificationType: string; identificationNumber: string;
+}
+interface CardFormInstance {
+  mount(): void;
+  getCardFormData(): CardFormData;
+}
+interface MercadoPagoInstance { cardForm(options: Record<string, unknown>): CardFormInstance; }
+
 type PaymentMethod = 'pix' | 'credit_card' | 'boleto';
 
 interface CreatePaymentRequest {
@@ -42,7 +52,6 @@ interface MercadoPagoCheckoutProps {
 export default function MercadoPagoCheckout({
   amountCents,
   paymentMethod,
-  payerEmail,
   onSuccess,
   onError,
   onClose,
@@ -57,11 +66,10 @@ export default function MercadoPagoCheckout({
   const [verificationMessage, setVerificationMessage] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentResult, setPaymentResult] = useState<CreatePaymentResponse | null>(null);
-  const [cardForm, setCardForm] = useState<any>(null);
-  const [showCardForm, setShowCardForm] = useState(false);
+  const [cardForm, setCardForm] = useState<CardFormInstance | null>(null);
   const [isSandbox, setIsSandbox] = useState(false);
   const cardFormRef = useRef<HTMLFormElement>(null);
-  const mpInstanceRef = useRef<any>(null);
+  const mpInstanceRef = useRef<MercadoPagoInstance | null>(null);
   const paymentCreated = useRef(false);
 
   // Load the card SDK only with the public key returned for a sandbox config.
@@ -114,8 +122,7 @@ export default function MercadoPagoCheckout({
   const initializeCardForm = () => {
     if (!mpInstanceRef.current || !cardFormRef.current) return;
     try {
-      let cardFormInstance: any;
-      cardFormInstance = mpInstanceRef.current.cardForm({
+      const cardFormInstance = mpInstanceRef.current.cardForm({
         amount: (amountCents / 100).toFixed(2),
         iframe: true,
         autoMount: false,
@@ -131,7 +138,7 @@ export default function MercadoPagoCheckout({
           identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Número do documento' },
         },
         callbacks: {
-          onFormMounted: (error: any) => {
+          onFormMounted: (error: unknown) => {
             if (error) {
               const message = 'Não foi possível montar os campos do cartão. Confira a chave pública de sandbox.';
               setErrorMessage(message);
@@ -143,7 +150,7 @@ export default function MercadoPagoCheckout({
             event.preventDefault();
             void handleCardSubmit(cardFormInstance.getCardFormData());
           },
-          onError: (error: any) => {
+          onError: (error: {message?: string} | null) => {
             const message = error?.message || 'Não foi possível carregar os campos do cartão.';
             setErrorMessage(message);
             setStatus('error');
@@ -168,7 +175,7 @@ export default function MercadoPagoCheckout({
     }
   };
 
-  const handleCardSubmit = async (data: any) => {
+  const handleCardSubmit = async (data: CardFormData) => {
     setLoading(true);
     try {
       const result = await createPayment({
@@ -486,6 +493,6 @@ export default function MercadoPagoCheckout({
 // Extend Window interface for MercadoPago SDK
 declare global {
   interface Window {
-    MercadoPago: any;
+    MercadoPago?: new (publicKey: string) => MercadoPagoInstance;
   }
 }

@@ -2,7 +2,7 @@ export const translations = {
   pt: {
     overview: 'Visão geral',
     roulette: 'Roletinha Vegas',
-    deposit: 'Roleta',
+    deposit: 'Depósitos',
     simulator: 'Roleta',
     animals: 'Roleta',
     results: 'Bichos premiados',
@@ -21,7 +21,7 @@ export const translations = {
   en: {
     overview: 'Overview',
     roulette: 'Vegas Wheel',
-    deposit: 'Wheel',
+    deposit: 'Deposits',
     simulator: 'Wheel',
     animals: 'Wheel',
     results: 'Winning animals',
@@ -40,7 +40,7 @@ export const translations = {
   es: {
     overview: 'Vista general',
     roulette: 'Ruleta Vegas',
-    deposit: 'Ruleta',
+    deposit: 'Depósitos',
     simulator: 'Ruleta',
     animals: 'Ruleta',
     results: 'Animales premiados',

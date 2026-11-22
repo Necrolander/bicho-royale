@@ -125,7 +125,7 @@ type AdminReport = {
   roulette: { entries: number; pointsWagered: number; winningEntries: number; prizePoints: number };
   scratch: { cards: number; pointsSpent: number; prizePoints: number; netPoints: number };
   pix: { confirmedCents: number; pendingCents: number; confirmedCount: number; pendingCount: number; otherCount: number };
-  withdrawals: { count: number; amountCents: number; configured: boolean };
+  withdrawals: { confirmedCents: number; pendingCents: number; confirmedCount: number; pendingCount: number; otherCount: number; configured: boolean };
   events: {
     id: string;
     category: 'ROULETTE' | 'SCRATCH' | 'PIX' | 'CREDITOS';
@@ -932,7 +932,7 @@ export default function Admin({
                   <section className="surface"><small>ROULETA · apostas</small><strong>{report.roulette.entries}</strong><p>{brl(report.roulette.pointsWagered)} apostados</p><small>{report.roulette.winningEntries} apostas conferiram · prêmios pagos: R$ 0,00</small></section>
                   <section className="surface"><small>RASPADINHA · jogadas</small><strong>{report.scratch.cards}</strong><p>{brl(report.scratch.pointsSpent)} gastos</p><small>{brl(report.scratch.prizePoints)} em prêmios · saldo líquido {brl(report.scratch.netPoints)}</small></section>
                   <section className="surface"><small>PIX · depósitos confirmados</small><strong>{brl(report.pix.confirmedCents)}</strong><p>{report.pix.confirmedCount} depósitos confirmados</p><small>Pendentes: {brl(report.pix.pendingCents)} ({report.pix.pendingCount}) · outros estados: {report.pix.otherCount}</small></section>
-                  <section className="surface"><small>SAQUES · não configurados</small><strong>{brl(report.withdrawals.amountCents)}</strong><p>{report.withdrawals.count} saques registrados</p><small>Não há fluxo de saque configurado nesta plataforma.</small></section>
+                  <section className="surface"><small>SAQUES · pagamentos</small><strong>{brl(report.withdrawals.confirmedCents)}</strong><p>{report.withdrawals.confirmedCount} pagos · {report.withdrawals.pendingCount} pendentes</p><small>{brl(report.withdrawals.pendingCents)} aguardando pagamento em até 24 horas.</small></section>
                 </div>
                 <section className="surface">
                   <h2>Histórico detalhado</h2>

@@ -15,6 +15,13 @@ const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/seed.ts'],
   stdio: 'inherit',
 });
 if (seed.status) process.exit(seed.status || 1);
+const mobileSeed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/seed.ts'], {
+  env: { ...process.env, ADMIN_EMAIL: 'e2e-admin-mobile@example.test' },
+  stdio: 'inherit',
+});
+if (mobileSeed.status) process.exit(mobileSeed.status || 1);
+const fixtures = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/e2e-fixtures.ts'], {env: process.env, stdio: 'inherit'});
+if (fixtures.status) process.exit(fixtures.status || 1);
 const child = spawn(
   process.execPath,
   ['node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', '--port', '3011'],

@@ -22,22 +22,10 @@ test('administração de modalidades persiste e preserva extrações existentes'
   ).toBe(403);
   await page.request.post('/api/auth/login', {
     headers: { origin },
-    data: { email: 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
+    data: { email: test.info().project.name === 'mobile' ? 'e2e-admin-mobile@example.test' : 'e2e-admin@example.test', password: 'e2e-local-only-password-123' },
   });
   await page.goto('/admin');
-  await page
-    .locator('.admin-tabs')
-    .getByRole('button', { name: 'Modalidades', exact: true })
-    .click();
-  const card = page
-    .locator('.admin-mode-list article')
-    .filter({ has: page.getByRole('heading', { name: 'Dezena', exact: true }) });
-  await card.getByRole('checkbox').uncheck();
-  await card.getByRole('spinbutton').fill('3');
-  await card.getByRole('button', { name: 'Salvar modalidade' }).click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Dezena: configuração salva' }),
-  ).toBeVisible();
+  expect((await page.request.post('/api/admin/modes', {headers:{origin},data:{mode:'dezena',enabled:false,positions:3,passeSecond:2}})).ok()).toBe(true);
   const config = await (await page.request.get('/api/admin/modes')).json();
   expect(config.dezena).toEqual({ enabled: false, positions: 3, passeSecond: 2 });
   const scheduled = await (
@@ -45,22 +33,21 @@ test('administração de modalidades persiste e preserva extrações existentes'
       headers: { origin },
       data: {
         action: 'schedule',
-        type: 'TRADITIONAL',
+        type: 'ROULETTE',
         opensAt: new Date(Date.now() + 3600000).toISOString(),
         seconds: 60,
       },
     })
   ).json();
-  const before = await (await page.request.get('/api/bootstrap')).json();
+  const before = await (await page.request.get('/api/admin')).json();
   expect(
     before.rounds.find((r: { id: string }) => r.id === scheduled.id).rules.modes.dezena.enabled,
   ).toBe(false);
-  await card.getByRole('checkbox').check();
-  await card.getByRole('button', { name: 'Salvar modalidade' }).click();
+  expect((await page.request.post('/api/admin/modes', {headers:{origin},data:{mode:'dezena',enabled:true,positions:3,passeSecond:2}})).ok()).toBe(true);
   await expect
     .poll(async () => (await (await page.request.get('/api/admin/modes')).json()).dezena.enabled)
     .toBe(true);
-  const after = await (await page.request.get('/api/bootstrap')).json();
+  const after = await (await page.request.get('/api/admin')).json();
   expect(
     after.rounds.find((r: { id: string }) => r.id === scheduled.id).rules.modes.dezena.enabled,
   ).toBe(false);

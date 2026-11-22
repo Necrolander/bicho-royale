@@ -5021,3 +5021,6 @@ footer, footer small { color: #a6a6a6; }
 .mp-card-checkout .mp-card-payment { max-height: calc(100dvh - 160px); }
 .mp-card-brand-note { text-align: left; }
 @media(max-width:520px) { .mp-checkout-container > .mp-checkout-header, .mp-checkout-container > .mp-pix-payment, .mp-checkout-container > .mp-card-payment { padding: 20px; } .mp-checkout-summary { grid-template-columns: 1fr; } .mp-pending-badge { width: fit-content; } }
+
+.withdrawal-pix-destination { flex-basis:100%;min-width:0; }
+.withdrawal-pix-destination span { overflow-wrap:anywhere; }

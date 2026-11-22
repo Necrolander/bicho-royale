@@ -271,7 +271,7 @@ export default function Scratchcard({
                   <b>
                     {game.prizes
                       .filter((prize) => prize.points > 0)
-                      .map((prize) => `{formatBRL(prize.points)}`)
+                      .map((prize) => formatBRL(prize.points))
                       .join(' · ') || 'Sem prêmios configurados'}
                   </b>
                 </div>

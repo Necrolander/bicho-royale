@@ -42,7 +42,7 @@ describe('Persistência e transações', () => {
     );
 
     expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('cpf');
-    expect(listUserWithdrawals(owner)[0]).not.toHaveProperty('pix_key');
+    expect(listUserWithdrawals(owner)[0]).toHaveProperty('pix_key', 'chave-de-teste');
 
     expect(processWithdrawalAsAdmin(user, id, 'reject')).toMatchObject({ status: 'REJECTED' });
     expect(() => processWithdrawalAsAdmin(user, id, 'reject')).toThrow('já foi processada');
@@ -308,6 +308,8 @@ describe('Destino Pix do saque', () => {
     run('UPDATE users SET cpf=?,points=6000 WHERE id=?', '11144477735', owner);
     const id = randomUUID();
     createWithdrawal(owner, 2000, id, 'destino@example.test');
+    expect(listUserWithdrawals(owner)[0].pix_key).toBe('destino@example.test');
+    expect(listUserWithdrawals(user)).not.toContainEqual(expect.objectContaining({id}));
     expect(one('SELECT cpf,pix_key FROM withdrawals WHERE id=?', id)).toMatchObject({cpf:'11144477735',pix_key:'destino@example.test'});
     createWithdrawal(owner, 2000, id, 'destino@example.test');
     expect(one('SELECT points FROM users WHERE id=?', owner)?.points).toBe(4000);

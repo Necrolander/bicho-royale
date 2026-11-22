@@ -18,10 +18,10 @@ test('roleta registra vários animais com débito total', async ({ page }) => {
     .locator('#roulette-animal-picker')
     .getByRole('button', { name: 'Coelho 37 · 38 · 39 · 40 Selecionar' })
     .click();
-  await expect(page.getByText('2 animal(is) · 10 pontos por animal')).toBeVisible();
+  await expect(page.getByText('2 animal(is) · R$ 0,10 cada')).toBeVisible();
   await page.getByRole('button', { name: 'Participar da rodada' }).click();
   await expect(
-    page.getByRole('status').filter({ hasText: '2 animal(is), 20 pontos' }),
+    page.getByRole('status').filter({ hasText: '2 animal(is), R$ 0,20' }),
   ).toBeVisible();
   const tickets = await (await page.request.get('/api/tickets')).json();
   expect(tickets.map((t: { selection: string[] }) => t.selection[0]).sort()).toEqual(['10', '16']);
@@ -34,7 +34,7 @@ test('o atalho antigo de animais abre a Roleta Vegas com seleção múltipla', a
     .locator('#roulette-animal-picker')
     .getByRole('button', { name: 'Coelho 37 · 38 · 39 · 40 Selecionar' })
     .click();
-  await expect(page.getByText('2 animal(is) · 10 pontos por animal')).toBeVisible();
+  await expect(page.getByText('2 animal(is) · R$ 0,10 cada')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Participar da rodada' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'APOSTAR AGORA' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

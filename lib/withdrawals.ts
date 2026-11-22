@@ -47,7 +47,7 @@ export function createWithdrawal(userId: string, amountCents: number, requestId:
 
 export function listUserWithdrawals(userId: string) {
   return all(
-    'SELECT id,amount_cents,status,created_at,processed_at,admin_note FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 200',
+    'SELECT id,amount_cents,status,pix_key,created_at,processed_at,admin_note FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 200',
     userId,
   );
 }

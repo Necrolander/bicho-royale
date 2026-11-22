@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+
+test('saque mantém destino escolhido, CPF padrão e devolve saldo ao rejeitar',async ({page})=>{
+  const origin='http://127.0.0.1:3011';
+  const project=test.info().project.name;
+  const login=()=>page.request.post('/api/auth/login',{headers:{origin},data:{email:'withdrawal-'+project+'@example.test',password:'withdrawal-local-only-123'}});
+  expect((await login()).ok()).toBeTruthy();
+  const key='pagamento-'+project+'@example.test';
+  const requestId=crypto.randomUUID();
+  const custom={amountCents:2000,requestId,pixKey:key};
+  expect((await page.request.post('/api/withdrawals',{headers:{origin},data:custom})).ok()).toBeTruthy();
+  expect((await page.request.post('/api/withdrawals',{headers:{origin},data:custom})).ok()).toBeTruthy();
+  expect((await page.request.post('/api/withdrawals',{headers:{origin},data:{amountCents:2000,requestId:crypto.randomUUID()}})).ok()).toBeTruthy();
+  const history=await (await page.request.get('/api/withdrawals')).json();
+  expect(history).toHaveLength(2);
+  expect(history.find((item:{id:string})=>item.id===requestId).pix_key).toBe(key);
+  expect(history.find((item:{id:string})=>item.id!==requestId).pix_key).toMatch(/^\d{11}$/);
+  expect((await (await page.request.get('/api/bootstrap')).json()).user.points).toBe(6000);
+  await page.goto('/saques');
+  await expect(page.locator('.withdrawal-history').getByText(key,{exact:true})).toBeVisible();
+  await page.screenshot({path:'artifacts/withdrawal-history-'+project+'.png',fullPage:true});
+  expect((await page.request.get('/api/admin/withdrawals')).status()).toBe(403);
+  expect((await page.request.post('/api/auth/login',{headers:{origin},data:{email:project==='mobile'?'e2e-admin-mobile@example.test':'e2e-admin@example.test',password:'e2e-local-only-password-123'}})).ok()).toBeTruthy();
+  const adminHistory=await (await page.request.get('/api/admin/withdrawals')).json();
+  expect(adminHistory.find((item:{id:string})=>item.id===requestId).pix_key).toBe(key);
+  expect((await page.request.post('/api/admin/withdrawals',{headers:{origin},data:{id:requestId,action:'reject',adminNote:'Rejeição de teste local'}})).ok()).toBeTruthy();
+  expect((await page.request.post('/api/admin/withdrawals',{headers:{origin},data:{id:requestId,action:'reject',adminNote:'Rejeição duplicada'}})).status()).toBe(409);
+  expect((await login()).ok()).toBeTruthy();
+  expect((await (await page.request.get('/api/bootstrap')).json()).user.points).toBe(8000);
+  await page.goto('/saques');
+  await expect(page.locator('.withdrawal-item').filter({hasText:key})).toContainText('Rejeitado');
+});
