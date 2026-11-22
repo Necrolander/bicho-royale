@@ -4836,3 +4836,24 @@ footer, footer small { color: #a6a6a6; }
 .referral-panel .field { margin: 14px 0; }
 .referral-panel ul { list-style: none; padding: 0; }
 .referral-panel li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-top: 1px solid var(--line); }
+.withdrawal-layout { display: grid; gap: 20px; }
+.withdrawal-request > p { color: #b5b5b5; line-height: 1.7; max-width: 720px; }
+.withdrawal-request form { display: grid; gap: 12px; max-width: 420px; margin-top: 20px; }
+.withdrawal-history h2 { margin-bottom: 20px; }
+.withdrawal-item { padding: 20px; margin-top: 12px; border: 1px solid #ffffff18; border-radius: 12px; background: #101010; }
+.withdrawal-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+.withdrawal-value { display: flex; align-items: center; gap: 12px; }
+.withdrawal-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: #cbff0012; color: #cbff00; }
+.withdrawal-value > div { display: grid; gap: 4px; }
+.withdrawal-value small { color: #a6a6a6; font-size: 12px; }
+.withdrawal-value b { color: #fff; font-size: 23px; letter-spacing: -.03em; }
+.withdrawal-status { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #ffffff20; border-radius: 999px; font-size: 12px; font-weight: 650; }
+.withdrawal-status-pending { color: #ffe095; background: #ffcc3310; border-color: #ffcc3330; }
+.withdrawal-status-approved { color: #8be2b3; background: #34d39910; border-color: #34d39930; }
+.withdrawal-status-rejected { color: #ffa19a; background: #ff777710; border-color: #ff777730; }
+.withdrawal-details { display: flex; flex-wrap: wrap; gap: 18px 40px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #ffffff10; }
+.withdrawal-details > div { display: grid; gap: 6px; }
+.withdrawal-details small { color: #929292; font-size: 11px; }
+.withdrawal-details time { color: #e5e5e5; font-size: 13px; }
+.withdrawal-item-note { display: flex; align-items: center; gap: 7px; margin: 16px 0 0; color: #b2b2b2; font-size: 12px; line-height: 1.6; }
+@media (max-width: 520px) { .withdrawal-item { padding: 15px; } .withdrawal-status { font-size: 11px; } .withdrawal-value b { font-size: 21px; } }

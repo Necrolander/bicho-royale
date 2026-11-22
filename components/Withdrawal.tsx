@@ -2,6 +2,10 @@
 import { formatBRL } from '@/lib/money';
 import { useEffect, useRef, useState } from 'react';
 import { api } from './Royale';
+import { ArrowUpRight, Clock3, CheckCircle2, XCircle } from 'lucide-react';
+
+const dateFormat = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Sao_Paulo' });
+const statusLabels: Record<string, string> = { PENDING: 'Aguardando pagamento', APPROVED: 'Pago', REJECTED: 'Rejeitado' };
 
 type Withdrawal = {
   id: string;
@@ -35,29 +39,28 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
     if (!items.length) return <p>Nenhum saque solicitado.</p>;
 
     return items.map((item) => {
-      const statusColors: Record<string, string> = {
-        PENDING: 'var(--warning)',
-        APPROVED: 'var(--success)',
-        REJECTED: 'var(--danger)',
-      };
+      const deadline = new Date(new Date(item.created_at).getTime() + 24 * 60 * 60 * 1000);
+      const Icon = item.status === 'APPROVED' ? CheckCircle2 : item.status === 'REJECTED' ? XCircle : Clock3;
       return (
-        <div className="withdrawal-item" key={item.id}>
+        <article className="withdrawal-item" key={item.id}>
           <div className="withdrawal-header">
-            <b>{formatBRL(item.amount_cents)}</b>
-            <span style={{ color: statusColors[item.status] || 'var(--muted)' }}>{item.status}</span>
+            <div className="withdrawal-value"><span className="withdrawal-icon"><ArrowUpRight size={20} /></span><div><small>Saque via Pix</small><b>{formatBRL(item.amount_cents)}</b></div></div>
+            <span className={`withdrawal-status withdrawal-status-${item.status.toLowerCase()}`}><Icon size={14} />{statusLabels[item.status] || 'Em análise'}</span>
           </div>
           <div className="withdrawal-details">
-            <span>Solicitado: {new Date(item.created_at).toLocaleString('pt-BR')}</span>
-            {item.processed_at && <span>Processado: {new Date(item.processed_at).toLocaleString('pt-BR')}</span>}
-            {item.admin_note && <span style={{fontSize: '0.85rem', color: 'var(--muted)'}}>Obs: {item.admin_note}</span>}
+            <div><small>Solicitado em</small><time dateTime={item.created_at}>{dateFormat.format(new Date(item.created_at))}</time></div>
+            {item.status === 'PENDING' && <div><small>Pagamento previsto até</small><time dateTime={deadline.toISOString()}>{dateFormat.format(deadline)}</time></div>}
+            {item.processed_at && <div><small>Processado em</small><time dateTime={item.processed_at}>{dateFormat.format(new Date(item.processed_at))}</time></div>}
           </div>
-        </div>
+          {item.status === 'PENDING' && <p className="withdrawal-item-note"><Clock3 size={14} /> O pagamento é realizado em até 24 horas após a solicitação.</p>}
+          {item.admin_note && <p className="withdrawal-item-note">{item.admin_note}</p>}
+        </article>
       );
     });
   };
 
   return <div className="withdrawal-layout">
-    <section className="surface">
+    <section className="surface withdrawal-request">
       <span className="eyebrow">SAQUES VIA PIX</span>
       <h2>Solicitar saque</h2>
       <p>Saque mínimo de R$ 20,00. Pagamento via Pix em até 24 horas após a solicitação, no CPF cadastrado na conta.</p>
@@ -82,7 +85,7 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
       </form>
       {message && <p role="alert">{message}</p>}
     </section>
-    <section className="surface">
+    <section className="surface withdrawal-history">
       <span className="eyebrow">SEUS SAQUES</span>
       <h2>Acompanhe o status</h2>
       {loading ? <p role="status">Carregando histórico…</p> : renderList()}
