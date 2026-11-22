@@ -27,13 +27,15 @@ function depositStatusLabel(status: string) {
   const labels: Record<string, string> = {
     PENDING: 'Aguardando pagamento',
     CREATING: 'Preparando pagamento',
+    IN_PROCESS: 'Em análise',
+    ERROR: 'Não concluído',
     CONFIRMED: 'Pagamento confirmado',
     APPROVED: 'Pagamento aprovado',
     REJECTED: 'Pagamento recusado',
     CANCELLED: 'Cancelado',
     EXPIRED: 'Expirado',
   };
-  return labels[status] || status.toLowerCase().replaceAll('_', ' ');
+  return labels[status.toUpperCase()] || status.toLowerCase().replaceAll('_', ' ');
 }
 
 function paymentLabel(method: string) {
@@ -199,7 +201,7 @@ export default function DepositScreen({
 
   const renderDepositList = () => {
     const items = activeTab === 'pix' ? pixItems : mpItems;
-    if (!items.length) return <p>Nenhum depósito solicitado.</p>;
+    if (!items.length) return <div className="deposit-empty"><Wallet size={26} /><b>Seu histórico começa aqui</b><p>Os pagamentos solicitados ficam disponíveis nesta área.</p></div>;
 
     return items.map((item) => {
       if (activeTab === 'pix') {
@@ -209,7 +211,8 @@ export default function DepositScreen({
           <div className="deposit-item" key={item.id}>
             <div className="deposit-history-heading"><span><QrCode size={15} /> Pix Efí</span><b>{formatBRL((pix.amount_cents || pix.amountCents || 0))}</b></div>
             <span className={`deposit-status ${pix.status.toLowerCase()}`}><i />{depositStatusLabel(pix.status)}</span>
-            {pix.status === 'PENDING' && code && <>
+            {pix.created_at && <p className="deposit-record-date">{new Date(pix.created_at).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'})} · Pedido #{pix.id.slice(0,8).toUpperCase()}</p>}
+            {pix.status.toUpperCase() === 'PENDING' && code && <>
               <div className="deposit-qr-wrap"><QRCodeSVG value={code} size={170} marginSize={2} /></div>
               <label className="deposit-copy-label">Pix copia e cola<textarea readOnly aria-label="Pix copia e cola" value={code} rows={3} /></label>
               <button className="secondary" onClick={() => void copyPix(code, setMessage)}>Copiar código Pix</button>
@@ -226,13 +229,14 @@ export default function DepositScreen({
           <div className="deposit-item" key={item.id}>
             <div className="deposit-history-heading"><span>{method === 'credit_card' ? <CreditCard size={15} /> : method === 'boleto' ? <Wallet size={15} /> : <QrCode size={15} />} Mercado Pago · {paymentLabel(method)}</span><b>{formatBRL(mp.amount_cents || 0)}</b></div>
             <span className={`deposit-status ${mp.status.toLowerCase()}`}><i />{depositStatusLabel(mp.status)}</span>
+            {mp.created_at && <p className="deposit-record-date">{new Date(mp.created_at).toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'})} · Pedido #{mp.id.slice(0,8).toUpperCase()}</p>}
             {isPending && (mp.qr_code || mp.qr_code_base64 || mp.ticket_url) && <>
               {mp.qr_code_base64 && (
                 <div style={{ marginTop: 8, textAlign: 'center' }}>
                   <img src={`data:image/png;base64,${mp.qr_code_base64}`} alt="QR Code PIX" style={{ maxWidth: 200 }} />
                 </div>
               )}
-              {mp.qr_code && !mp.qr_code_base64 && (
+              {mp.qr_code && (
                 <div style={{ marginTop: 8 }}>
                   <textarea readOnly value={mp.qr_code} rows={3} style={{ width: '100%' }} />
                   <button className="secondary" onClick={() => void copyPix(mp.qr_code || '', setMessage)}>Copiar código Pix</button>
@@ -257,12 +261,12 @@ export default function DepositScreen({
     });
   };
 
-  return <div className="deposit-page">
+  return <div className="deposit-page deposit-workspace">
     <section className="surface deposit-page-hero">
       <div className="deposit-page-hero-copy">
         <span className="eyebrow"><Wallet size={14} /> CARTEIRA BICHOS VEGAS</span>
-        <h2>Adicionar saldo</h2>
-        <p>Escolha um valor e pague pelo método que preferir. Você acompanha a confirmação e o histórico por aqui.</p>
+        <h2>Seu saldo, pronto para o próximo jogo.</h2>
+        <p>Escolha o valor, conclua o pagamento e acompanhe a confirmação na sua conta.</p>
         <div className="deposit-trust-points">
           <span><ShieldCheck size={14} /> Confirmação pelo provedor</span>
           <span><Clock3 size={14} /> Status atualizado nesta tela</span>
@@ -271,7 +275,7 @@ export default function DepositScreen({
       <button className="deposit-balance-card" onClick={onViewAccount}>
         <span>SEU SALDO ATUAL</span>
         <strong>{formatBRL(points)}</strong>
-        <small>saldo <ArrowRight size={13} /></small>
+        <small>Ver minha carteira <ArrowRight size={13} /></small>
       </button>
     </section>
 
@@ -279,7 +283,7 @@ export default function DepositScreen({
       <section className="surface deposit-builder">
         <div className="deposit-section-heading">
           <div className="deposit-section-icon"><CreditCard size={18} /></div>
-          <div><span className="eyebrow">NOVO PAGAMENTO</span><h3>Como deseja adicionar?</h3></div>
+          <div><span className="eyebrow">NOVO PAGAMENTO</span><h3>Adicionar saldo</h3></div>
         </div>
         {registered && (pixEnabled || mpEnabled) && (
           <div className="deposit-provider-tabs" role="tablist" aria-label="Provedor de pagamento">
@@ -293,6 +297,8 @@ export default function DepositScreen({
         {message && <div className={`deposit-message ${message.includes('copiado') || message.includes('aprovado') ? 'success' : ''}`} role="status"><CircleAlert size={15} />{message}</div>}
       </section>
 
+      <aside className="surface deposit-explainer"><span className="eyebrow">SOBRE SEU PAGAMENTO</span><h3>Você acompanha cada etapa</h3><div><QrCode size={20} /><section><b>Escolha como pagar</b><p>Use os métodos disponíveis abaixo do valor escolhido. Para Pix, você pode escanear o QR Code ou copiar o código.</p></section></div><div><ShieldCheck size={20} /><section><b>Confirmação do pagamento</b><p>O saldo é atualizado após a confirmação do provedor. O prazo depende do método escolhido.</p></section></div><div><Clock3 size={20} /><section><b>Histórico na sua conta</b><p>Consulte o status de cada solicitação e use “Verificar pagamento” para buscar uma atualização.</p></section></div></aside>
+    </div>
       <section className="surface deposit-history">
         <div className="deposit-section-heading">
           <div className="deposit-section-icon"><Clock3 size={18} /></div>
@@ -301,7 +307,6 @@ export default function DepositScreen({
         <p className="deposit-history-intro">{activeTab === 'pix' ? 'Atividade de Pix pela Efí.' : 'Atividade processada pelo Mercado Pago.'}</p>
         <div className="deposit-history-list">{renderDepositList()}</div>
       </section>
-    </div>
 
     {showMPCheckout && payerEmail && (
       <MercadoPagoCheckout
