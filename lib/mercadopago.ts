@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import https from 'node:https';
 import { ApiError } from './auth';
+import { isValidCpf, normalizeCpf } from './cpf';
 import { all, audit, one, run, transaction } from './db';
 
 export type MercadoPagoConfig = {
@@ -180,6 +181,13 @@ export async function createMercadoPagoPayment(
   cardPaymentMethodId?: string,
   boletoPayer?: { first_name: string; last_name: string; address: Record<string, string> },
 ): Promise<CreatePaymentResult> {
+  if (paymentMethod === 'pix') {
+    const account = one('SELECT cpf FROM users WHERE id=?', userId);
+    const cpf = normalizeCpf(String(account?.cpf || ''));
+    if (!isValidCpf(cpf)) throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta para gerar o Pix.');
+    // Pix identifies the authenticated account, never a document supplied by the client.
+    payerIdentification = { type: 'CPF', number: cpf };
+  }
   const config = loadConfig();
   requirePayments(config);
   if (paymentMethod === 'credit_card' && (!token || !cardPaymentMethodId))
@@ -199,14 +207,6 @@ export async function createMercadoPagoPayment(
       ...boletoPayer,
       ...(payerIdentification ? { identification: payerIdentification } : {}),
     };
-    // Para PIX, adicionar identification com CPF válido (11 dígitos)
-    if (paymentMethod === 'pix' && !payerIdentification) {
-      // Tenta usar email como CPF (remove não-dígitos), senão usa um CPF de teste
-      let cpf = payerEmail.replace(/\D/g, '').slice(0, 11);
-      if (cpf.length < 11) cpf = '00000000000'; // CPF genérico para testes
-      payerData.identification = { type: 'CPF', number: cpf };
-    }
-
     const paymentData: Record<string, unknown> = {
       transaction_amount: amountCents / 100,
       payment_method_id: mpPaymentMethod,
