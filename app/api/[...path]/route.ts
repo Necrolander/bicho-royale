@@ -39,6 +39,7 @@ import {
 import {
   createMercadoPagoPayment,
   mercadoPagoCheckoutPublicKey,
+  mercadoPagoPayer,
   mercadoPagoStatus,
   reconcileUncreditedDeposits,
   refreshMercadoPagoDeposit,
@@ -246,6 +247,10 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         ),
       );
     }
+    if (path === 'mercadopago/payer' && !post) {
+      const user = requireRegistration((await currentUser())!);
+      return json(mercadoPagoPayer(String(user.id)));
+    }
     if (path === 'mercadopago/public-key' && !post) {
       requireRegistration((await currentUser())!);
       return json(mercadoPagoCheckoutPublicKey());
@@ -273,8 +278,8 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         }).optional(),
       }).parse(payload);
       const userCpf = normalizeCpf(String(user.cpf || ''));
-      if (input.paymentMethod === 'pix' && !isValidCpf(userCpf))
-        throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta para gerar o Pix.');
+      if (!isValidCpf(userCpf))
+        throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta para continuar o pagamento.');
       if (input.paymentMethod === 'boleto' && (!input.boletoAddress || !isValidCpf(userCpf)))
         throw new ApiError(400, 'Para gerar o boleto, cadastre um CPF válido no perfil e informe o endereço.');
       rateLimit(`mp:${user.id}`, 3, 3600000);
@@ -288,11 +293,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         input.token,
         input.installments,
         input.issuerId,
-        input.paymentMethod === 'boleto' || input.paymentMethod === 'pix'
-          ? { type: 'CPF', number: userCpf }
-          : input.identificationType && input.identificationNumber
-            ? { type: input.identificationType, number: input.identificationNumber }
-            : undefined,
+        { type: 'CPF', number: userCpf },
         input.paymentMethodId,
         input.paymentMethod === 'boleto' && input.boletoAddress
           ? { first_name: firstName, last_name: surname.join(' '), address: input.boletoAddress }

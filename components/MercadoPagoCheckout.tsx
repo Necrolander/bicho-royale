@@ -5,7 +5,6 @@ import { api } from './Royale';
 
 interface CardFormData {
   token: string; installments: string; paymentMethodId: string; issuerId: string;
-  identificationType: string; identificationNumber: string;
 }
 interface CardFormInstance {
   mount(): void;
@@ -22,8 +21,6 @@ interface CreatePaymentRequest {
   installments?: number;
   paymentMethodId?: string;
   issuerId?: string;
-  identificationType?: string;
-  identificationNumber?: string;
   boletoAddress?: Record<string, string>;
 }
 
@@ -72,14 +69,16 @@ export default function MercadoPagoCheckout({
   const mpInstanceRef = useRef<MercadoPagoInstance | null>(null);
   const paymentCreated = useRef(false);
 
-  // Load the card SDK only with the public key returned for a sandbox config.
+  // Load the SDK with the configured key and the authenticated account document.
   useEffect(() => {
     if (paymentMethod !== 'credit_card') return;
     let cancelled = false;
     let script: HTMLScriptElement | undefined;
     const initialize = async () => {
       try {
-        const { publicKey, environment } = await api('mercadopago/public-key');
+        const [{ publicKey, environment }, payer] = await Promise.all([
+          api('mercadopago/public-key'), api('mercadopago/payer'),
+        ]);
         if (!publicKey) throw new Error('A chave pública do Mercado Pago não está configurada.');
         setIsSandbox(environment === 'sandbox');
         if (!window.MercadoPago) {
@@ -95,7 +94,7 @@ export default function MercadoPagoCheckout({
         if (cancelled) return;
         if (!window.MercadoPago) throw new Error('O SDK do Mercado Pago não inicializou.');
         mpInstanceRef.current = new window.MercadoPago(publicKey);
-        initializeCardForm();
+        initializeCardForm(payer.identificationNumber);
       } catch (error) {
         if (cancelled) return;
         const message = error instanceof Error ? error.message : 'Não foi possível abrir o formulário de cartão.';
@@ -119,9 +118,16 @@ export default function MercadoPagoCheckout({
     }
   }, [paymentMethod]);
 
-  const initializeCardForm = () => {
+  const initializeCardForm = (cpf: string) => {
     if (!mpInstanceRef.current || !cardFormRef.current) return;
+    const applyAccountDocument = () => {
+      const number = cardFormRef.current?.querySelector<HTMLInputElement>('#form-checkout__identificationNumber');
+      const type = cardFormRef.current?.querySelector<HTMLSelectElement>('#form-checkout__identificationType');
+      if (number) { number.value = cpf; number.dispatchEvent(new Event('input', { bubbles: true })); }
+      if (type) { type.value = 'CPF'; type.dispatchEvent(new Event('change', { bubbles: true })); }
+    };
     try {
+      applyAccountDocument();
       const cardFormInstance = mpInstanceRef.current.cardForm({
         amount: (amountCents / 100).toFixed(2),
         iframe: true,
@@ -139,6 +145,7 @@ export default function MercadoPagoCheckout({
         },
         callbacks: {
           onFormMounted: (error: unknown) => {
+            if (!error) applyAccountDocument();
             if (error) {
               const message = 'Não foi possível montar os campos do cartão. Confira a chave pública de sandbox.';
               setErrorMessage(message);
@@ -185,8 +192,6 @@ export default function MercadoPagoCheckout({
         installments: Number(data.installments),
         paymentMethodId: data.paymentMethodId,
         issuerId: data.issuerId,
-        identificationType: data.identificationType,
-        identificationNumber: data.identificationNumber,
       });
       handlePaymentResult(result);
     } catch (error) {
@@ -427,7 +432,7 @@ export default function MercadoPagoCheckout({
                 </a>
               )}
               {paymentResult && (
-                <p className="mp-instruction">{ticketUrl ? 'O boleto de teste abre em uma nova aba.' : 'O Mercado Pago ainda não retornou o link. Consulte o boleto novamente.'}</p>
+                <p className="mp-instruction">{ticketUrl ? 'O boleto abre em uma nova aba.' : 'O Mercado Pago ainda não retornou o link. Consulte o boleto novamente.'}</p>
               )}
               {verificationMessage && <p role="status">{verificationMessage}</p>}
               <div className="mp-checkout-actions">
@@ -468,12 +473,17 @@ export default function MercadoPagoCheckout({
                 </div>
                 <div className="mp-card-fields-row">
                   <label>Nome impresso no cartão<input id="form-checkout__cardholderName" autoComplete="cc-name" placeholder="Como aparece no cartão" /></label>
-                  <label>CPF<input id="form-checkout__identificationNumber" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" /></label>
+
                 </div>
                 <div className="mp-card-fields-row mp-card-selects-row">
-                  <label>Documento<select id="form-checkout__identificationType" defaultValue="CPF" /></label>
+
                   <label>Banco emissor<select id="form-checkout__issuer" defaultValue="" /></label>
                 </div>
+                <div hidden aria-hidden="true">
+                  <select id="form-checkout__identificationType" defaultValue="CPF" tabIndex={-1}><option value="CPF">CPF</option></select>
+                  <input id="form-checkout__identificationNumber" readOnly tabIndex={-1} autoComplete="off" />
+                </div>
+                <p className="mp-instruction">CPF da conta aplicado automaticamente.</p>
                 <label className="mp-card-full">Parcelas<select id="form-checkout__installments" defaultValue="" /></label>
                 <div className="mp-card-form-actions">
                   <button className="primary" type="submit" disabled={loading || !cardForm}>

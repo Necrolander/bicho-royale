@@ -169,6 +169,13 @@ function mapPaymentMethod(method: 'pix' | 'credit_card' | 'boleto'): string {
   }
 }
 
+export function mercadoPagoPayer(userId: string) {
+  const account = one('SELECT cpf FROM users WHERE id=?', userId);
+  const cpf = normalizeCpf(String(account?.cpf || ''));
+  if (!isValidCpf(cpf)) throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta para continuar o pagamento.');
+  return { identificationType: 'CPF', identificationNumber: cpf };
+}
+
 export async function createMercadoPagoPayment(
   userId: string,
   amountCents: number,
@@ -181,13 +188,9 @@ export async function createMercadoPagoPayment(
   cardPaymentMethodId?: string,
   boletoPayer?: { first_name: string; last_name: string; address: Record<string, string> },
 ): Promise<CreatePaymentResult> {
-  if (paymentMethod === 'pix') {
-    const account = one('SELECT cpf FROM users WHERE id=?', userId);
-    const cpf = normalizeCpf(String(account?.cpf || ''));
-    if (!isValidCpf(cpf)) throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta para gerar o Pix.');
-    // Pix identifies the authenticated account, never a document supplied by the client.
-    payerIdentification = { type: 'CPF', number: cpf };
-  }
+  const payer = mercadoPagoPayer(userId);
+  // Every payment uses the account document, never a value supplied by the client.
+  payerIdentification = { type: payer.identificationType, number: payer.identificationNumber };
   const config = loadConfig();
   requirePayments(config);
   if (paymentMethod === 'credit_card' && (!token || !cardPaymentMethodId))

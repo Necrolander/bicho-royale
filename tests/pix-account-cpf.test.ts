@@ -68,3 +68,27 @@ describe('CPF da conta enviado ao provedor Pix',()=>{
     expect(Number(one('SELECT count(*) AS total FROM mercadopago_deposits')?.total)).toBe(count);
   });
 });
+
+
+describe.each(['credit_card','boleto'] as const)('CPF da conta no método %s',(method)=>{
+  it('não exige documento no pedido para usar o CPF cadastrado',async()=>{
+    await createMercadoPagoPayment(owner,1000,method,'titular@example.test',method==='credit_card'?'token-local-only':undefined,1,undefined,undefined,method==='credit_card'?'visa':undefined);
+    expect(payer()).toMatchObject({identification:{type:'CPF',number:'52998224725'}});
+  });
+  const create=()=>createMercadoPagoPayment(owner,1000,method,'titular@example.test',method==='credit_card'?'token-local-only':undefined,1,undefined,{type:'CPF',number:'11144477735'},method==='credit_card'?'visa':undefined,method==='boleto'?{first_name:'Titular',last_name:'Teste',address:{zip_code:'01001000',street_name:'Praça da Sé',street_number:'1',neighborhood:'Sé',city:'São Paulo',federal_unit:'SP'}}:undefined);
+  it('envia o CPF do banco, ignorando o documento enviado pelo navegador',async()=>{
+    await create();
+    expect(payer()).toMatchObject({identification:{type:'CPF',number:'52998224725'}});
+    expect(transport.bodies[0].payment_method_id).toBe(method==='boleto'?'bolbradesco':'visa');
+  });
+  it('utiliza automaticamente o CPF atualizado no perfil',async()=>{
+    run('UPDATE users SET cpf=? WHERE id=?','11144477735',owner);
+    await create();
+    expect(payer()).toMatchObject({identification:{type:'CPF',number:'11144477735'}});
+  });
+  it.each([null,'00000000000'])('recusa CPF ausente ou inválido antes de criar cobrança (%s)',async(cpf)=>{
+    run('UPDATE users SET cpf=? WHERE id=?',cpf,owner);
+    await expect(create()).rejects.toThrow('CPF válido');
+    expect(transport.bodies).toHaveLength(0);
+  });
+});
