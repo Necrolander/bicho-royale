@@ -57,6 +57,7 @@ export default function DepositScreen({
   payerEmail,
   onRegister,
   onViewAccount,
+  onRefreshUser,
 }: {
   pixEnabled: boolean;
   mpEnabled: boolean;
@@ -65,6 +66,7 @@ export default function DepositScreen({
   payerEmail: string;
   onRegister: () => void;
   onViewAccount: () => void;
+  onRefreshUser?: () => void;
 }) {
   const [amount, setAmount] = useState('10.00');
   const [pixItems, setPixItems] = useState<PixDeposit[]>([]);
@@ -80,7 +82,12 @@ export default function DepositScreen({
       if (mpEnabled) setMpItems(await api('mercadopago/deposits'));
     } catch (error) { setMessage((error as Error).message); }
   };
-  useEffect(() => { if (registered) void load(); }, [registered, pixEnabled, mpEnabled]);
+  useEffect(() => {
+    if (registered) {
+      void load();
+      onRefreshUser?.();
+    }
+  }, [registered, pixEnabled, mpEnabled]);
 
   const createPix = async () => {
     const cents = Math.round(Number(amount.replace(',', '.')) * 100);
@@ -110,6 +117,7 @@ export default function DepositScreen({
   const handleMPSuccess = async () => {
     setShowMPCheckout(false);
     await load();
+    onRefreshUser?.();
     setMessage('Pagamento aprovado. Consulte o registro no histórico.');
   };
 
@@ -123,14 +131,22 @@ export default function DepositScreen({
 
   const refreshPix = async (id: string) => {
     setBusy(true); setMessage('');
-    try { await api('pix/refresh', { id }); await load(); }
+    try {
+      await api('pix/refresh', { id });
+      await load();
+      onRefreshUser?.();
+    }
     catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
   };
 
   const refreshMP = async (id: string) => {
     setBusy(true); setMessage('');
-    try { await api('mercadopago/refresh', { id }); await load(); }
+    try {
+      await api('mercadopago/refresh', { id });
+      await load();
+      onRefreshUser?.();
+    }
     catch (error) { setMessage((error as Error).message); }
     finally { setBusy(false); }
   };

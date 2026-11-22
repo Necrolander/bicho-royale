@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import https from 'node:https';
 import { ApiError } from './auth';
-import { audit, one, run, transaction } from './db';
+import { all, audit, one, run, transaction } from './db';
 
 export type MercadoPagoConfig = {
   accessToken: string;
@@ -277,6 +277,9 @@ export async function createMercadoPagoPayment(
       const setClause = Object.keys(updateFields).map(k => `${k}=?`).join(',');
       const values = [...Object.values(updateFields).map((value) => value == null ? null : String(value)), id];
       if (setClause) run(`UPDATE mercadopago_deposits SET ${setClause} WHERE id=?`, ...values);
+      if (response.status === 'approved') {
+        creditConfirmedDeposit(userId, id, amountCents, 'MERCADOPAGO');
+      }
       audit(userId, 'MP_DEPOSIT_CREATED', { id, externalReference, mpPaymentId: response.id, status: response.status });
     });
 
@@ -337,9 +340,17 @@ async function processPaymentResponse(userId: string, depositId: string, payment
       payment.currency_id === 'BRL' && paidCents === Number(row.amount_cents)
     ) {
       transaction(() => {
-        const currentStatus = String(one('SELECT status FROM mercadopago_deposits WHERE id=?', depositId)?.status || '').toUpperCase();
+        const current = one('SELECT status, credited_at FROM mercadopago_deposits WHERE id=?', depositId);
+        const currentStatus = String(current?.status || '').toUpperCase();
+        if (['CONFIRMED', 'APPROVED'].includes(currentStatus)) {
+          if (!current?.credited_at) {
+            creditConfirmedDeposit(userId, depositId, paidCents, 'MERCADOPAGO');
+          }
+          return;
+        }
         if (!['PENDING', 'CREATING', 'IN_PROCESS'].includes(currentStatus)) return;
         run('UPDATE mercadopago_deposits SET status=?,confirmed_at=?,payment_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), paymentId, depositId);
+        creditConfirmedDeposit(userId, depositId, paidCents, 'MERCADOPAGO');
         audit(userId, 'MP_DEPOSIT_CONFIRMED', { id: depositId, externalReference: String(payment.external_reference), amountCents: paidCents });
       });
     }
@@ -354,6 +365,66 @@ async function processPaymentResponse(userId: string, depositId: string, payment
     ticketUrl: updated?.ticket_url,
     paymentId: updated?.payment_id,
   };
+}
+
+export function creditConfirmedDeposit(
+  userId: string,
+  depositId: string,
+  amountCents: number,
+  provider: 'MERCADOPAGO' | 'EFI' = 'MERCADOPAGO',
+) {
+  const table = provider === 'MERCADOPAGO' ? 'mercadopago_deposits' : 'pix_deposits';
+  const dep = one(`SELECT credited_at FROM ${table} WHERE id=?`, depositId);
+  if (!dep || dep.credited_at) return;
+
+  const now = new Date().toISOString();
+  run(`UPDATE ${table} SET credited_at=? WHERE id=?`, now, depositId);
+  run('UPDATE users SET points=points+? WHERE id=?', amountCents, userId);
+  const updated = one('SELECT points FROM users WHERE id=?', userId);
+  const newBalance = Number(updated?.points ?? 0);
+  run(
+    'INSERT INTO transactions(id,user_id,entry_id,amount,balance,created_at) VALUES(?,?,?,?,?,?)',
+    randomUUID(),
+    userId,
+    null,
+    amountCents,
+    newBalance,
+    now,
+  );
+  run(
+    'INSERT INTO notifications(id,user_id,message,created_at) VALUES(?,?,?,?)',
+    randomUUID(),
+    userId,
+    `Depósito de ${(amountCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} creditado na sua conta!`,
+    now,
+  );
+  audit(userId, `${provider}_POINTS_CREDITED`, { depositId, amountCents, balance: newBalance });
+}
+
+export function reconcileUncreditedDeposits(userId: string) {
+  try {
+    const uncreditedMP = all(
+      "SELECT id, amount_cents FROM mercadopago_deposits WHERE user_id=? AND UPPER(status) IN ('CONFIRMED', 'APPROVED') AND credited_at IS NULL",
+      userId,
+    );
+    for (const dep of uncreditedMP) {
+      transaction(() => {
+        creditConfirmedDeposit(userId, String(dep.id), Number(dep.amount_cents), 'MERCADOPAGO');
+      });
+    }
+
+    const uncreditedPix = all(
+      "SELECT id, amount_cents FROM pix_deposits WHERE user_id=? AND UPPER(status)='CONFIRMED' AND credited_at IS NULL",
+      userId,
+    );
+    for (const dep of uncreditedPix) {
+      transaction(() => {
+        creditConfirmedDeposit(userId, String(dep.id), Number(dep.amount_cents), 'EFI');
+      });
+    }
+  } catch (error) {
+    console.error('Error reconciling uncredited deposits:', error);
+  }
 }
 
 export async function refreshMercadoPagoDepositAsAdmin(adminId: string, id: string) {

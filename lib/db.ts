@@ -68,6 +68,8 @@ export function initialize() {
     // were created before profile details were added.
     run('ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT');
     run('ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf TEXT UNIQUE');
+    try { run('ALTER TABLE mercadopago_deposits ADD COLUMN IF NOT EXISTS credited_at TEXT'); } catch {}
+    try { run('ALTER TABLE pix_deposits ADD COLUMN IF NOT EXISTS credited_at TEXT'); } catch {}
     // Most Vercel invocations are fresh isolates. Once the database has been
     // seeded, avoid reopening a serialized write transaction on every cold
     // start just to reinsert rows that already exist.
@@ -183,6 +185,14 @@ CREATE INDEX IF NOT EXISTS idx_mp_user ON mercadopago_deposits(user_id,created_a
     d.exec('ALTER TABLE users ADD COLUMN full_name TEXT');
   if (!d.prepare('PRAGMA table_info(users)').all().some((column) => column.name === 'cpf'))
     d.exec('ALTER TABLE users ADD COLUMN cpf TEXT UNIQUE');
+  try {
+    if (!d.prepare('PRAGMA table_info(mercadopago_deposits)').all().some((column) => column.name === 'credited_at'))
+      d.exec('ALTER TABLE mercadopago_deposits ADD COLUMN credited_at TEXT');
+  } catch {}
+  try {
+    if (!d.prepare('PRAGMA table_info(pix_deposits)').all().some((column) => column.name === 'credited_at'))
+      d.exec('ALTER TABLE pix_deposits ADD COLUMN credited_at TEXT');
+  } catch {}
   if (!d.prepare('PRAGMA table_info(withdrawals)').all().some((column) => column.name === 'id'))
     d.exec(`CREATE TABLE IF NOT EXISTS withdrawals(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),amount_cents INTEGER NOT NULL CHECK(amount_cents>0),status TEXT NOT NULL DEFAULT 'PENDING',cpf TEXT NOT NULL,pix_key TEXT,created_at TEXT NOT NULL,processed_at TEXT,admin_id TEXT,admin_note TEXT)`);
   if (!d.prepare("SELECT * FROM sqlite_master WHERE type='index' AND name='idx_withdrawals_user'").get())

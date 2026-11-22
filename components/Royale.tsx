@@ -1284,6 +1284,7 @@ export default function Royale() {
                   payerEmail={data.user?.email || ''}
                   onRegister={openRegistration}
                   onViewAccount={() => navigate('profile')}
+                  onRefreshUser={load}
                 />
               )}
               {page === 'profile' && data.user && (

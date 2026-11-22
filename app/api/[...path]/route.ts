@@ -40,6 +40,7 @@ import {
   createMercadoPagoPayment,
   mercadoPagoCheckoutPublicKey,
   mercadoPagoStatus,
+  reconcileUncreditedDeposits,
   refreshMercadoPagoDeposit,
   refreshMercadoPagoDepositAsAdmin,
   saveMercadoPagoConfig,
@@ -212,6 +213,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     }
     if (path === 'pix/deposits' && !post) {
       const user = (await currentUser())!;
+      reconcileUncreditedDeposits(String(user.id));
       return json(
         all(
           'SELECT id,txid,amount_cents,status,copy_paste,created_at,confirmed_at FROM pix_deposits WHERE user_id=? ORDER BY created_at DESC',
@@ -230,10 +232,13 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const user = (await currentUser())!;
       rateLimit(`pix-refresh:${user.id}`, 10, 60000);
       const input = z.object({ id: z.uuid() }).parse(payload);
-      return json(await refreshPixDeposit(String(user.id), input.id));
+      const res = await refreshPixDeposit(String(user.id), input.id);
+      reconcileUncreditedDeposits(String(user.id));
+      return json(res);
     }
     if (path === 'mercadopago/deposits' && !post) {
       const user = (await currentUser())!;
+      reconcileUncreditedDeposits(String(user.id));
       return json(
         all(
           'SELECT id,external_reference,amount_cents,payment_method,status,init_point,sandbox_init_point,created_at,confirmed_at,qr_code,qr_code_base64,ticket_url FROM mercadopago_deposits WHERE user_id=? ORDER BY created_at DESC',
@@ -296,12 +301,18 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
       const user = (await currentUser())!;
       rateLimit(`mp-refresh:${user.id}`, 10, 60000);
       const input = z.object({ id: z.uuid() }).parse(payload);
-      return json(await refreshMercadoPagoDeposit(String(user.id), input.id));
+      const res = await refreshMercadoPagoDeposit(String(user.id), input.id);
+      reconcileUncreditedDeposits(String(user.id));
+      return json(res);
     }
     if (path === 'bootstrap') {
       const user = await currentUser(false);
-      const platformSettings = settings();
       if (user) {
+        reconcileUncreditedDeposits(String(user.id));
+      }
+      const freshUser = user ? one('SELECT * FROM users WHERE id=?', String(user.id)) : null;
+      const platformSettings = settings();
+      if (freshUser) {
         const now = new Date().toISOString();
         const round = one(
           "SELECT state,opens_at,locks_at FROM rounds WHERE type='ROULETTE' AND state IN ('SCHEDULED','OPEN','LOCKED','DRAWING') ORDER BY locks_at LIMIT 1",
@@ -330,7 +341,7 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
         };
       });
       return json({
-        user: user ? publicUser(user) : null,
+        user: freshUser ? publicUser(freshUser) : null,
         paymentsEnabled: efiStatus().paymentsEnabled,
         mercadoPagoEnabled: mercadoPagoStatus().paymentsEnabled,
         animals,

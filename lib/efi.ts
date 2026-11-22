@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:
 import https from 'node:https';
 import { ApiError } from './auth';
 import { audit, one, run, transaction } from './db';
+import { creditConfirmedDeposit } from './mercadopago';
 
 export type EfiConfig = {
   clientId: string;
@@ -135,6 +136,7 @@ export async function refreshPixDeposit(userId: string, id: string) {
     transaction(() => {
       if (one('SELECT status FROM pix_deposits WHERE id=?', id)?.status !== 'PENDING') return;
       run('UPDATE pix_deposits SET status=?,confirmed_at=?,e2e_id=? WHERE id=?', 'CONFIRMED', new Date().toISOString(), pix.endToEndId as string, id);
+      creditConfirmedDeposit(userId, id, paidCents, 'EFI');
       audit(userId, 'PIX_DEPOSIT_CONFIRMED', { id, txid: row.txid, amountCents: paidCents });
     });
   }

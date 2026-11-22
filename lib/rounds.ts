@@ -217,7 +217,7 @@ function createEntry(
   if (!Number.isInteger(input.points) || input.points < 1 || input.points > 100)
     throw new ApiError(400, 'Informe um valor de R$ 0,01 a R$ 1,00');
   if (Number(user.points) < input.points)
-    throw new ApiError(400, 'Saldo insuficiente');
+    throw new ApiError(400, 'Saldo ou créditos insuficientes');
   const id = randomUUID(),
     now = new Date().toISOString(),
     balance = Number(user.points) - input.points;
@@ -262,6 +262,9 @@ export function enterGroupBatch(userId: string, input: Parameters<typeof createE
     throw new ApiError(400, 'Selecione de 1 a 25 animais');
   const groups = input.selection.map((g) => normalizeSelection(input.mode, [g])[0]).sort();
   if (new Set(groups).size !== groups.length) throw new ApiError(400, 'Escolha animais distintos');
+  const user = one('SELECT points FROM users WHERE id=?', userId);
+  if (!user || Number(user.points) < groups.length * input.points)
+    throw new ApiError(400, 'Saldo ou créditos insuficientes');
   return transaction(() => {
     const existing = all(
       'SELECT * FROM entries WHERE user_id=? AND idempotency_key LIKE ? ORDER BY selection',
