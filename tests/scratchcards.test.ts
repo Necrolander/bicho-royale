@@ -54,3 +54,13 @@ describe('chance zero e distribuição exata', () => {
     expect(results.filter(p=>p.points===10000)).toHaveLength(0);
   });
 });
+
+
+describe('prêmio com 100% de chance',()=>{
+  it.each([0,1,2])('sempre seleciona o prêmio na posição %i em todos os 10.000 resultados',(position)=>{
+    const guaranteed={label:'Prêmio garantido',points:500,chance:10000};
+    const prizes=[{label:'Sem prêmio',points:0,chance:0},{label:'Outro prêmio',points:10000,chance:0}];
+    prizes.splice(position,0,guaranteed);
+    for(let draw=0;draw<10000;draw++) expect(pickScratchPrize(prizes,draw)).toBe(guaranteed);
+  });
+});
