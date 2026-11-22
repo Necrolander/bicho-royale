@@ -203,7 +203,7 @@ export default function DepositScreen({
     const items = activeTab === 'pix' ? pixItems : mpItems;
     if (!items.length) return <div className="deposit-empty"><Wallet size={26} /><b>Seu histórico começa aqui</b><p>Os pagamentos solicitados ficam disponíveis nesta área.</p></div>;
 
-    return items.map((item) => {
+    return items.slice(0, 5).map((item) => {
       if (activeTab === 'pix') {
         const pix = item as PixDeposit;
         const code = pix.copy_paste || pix.copyPaste;

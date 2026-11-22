@@ -497,9 +497,9 @@ async function handler(req: Request, { params }: { params: Promise<{ path: strin
     }
     if (path === 'withdrawals' && post) {
       const user = requireRegistration((await currentUser())!);
-      const input = z.object({ amountCents: z.number().int().min(2000).max(Number.MAX_SAFE_INTEGER), requestId: z.uuid() }).parse(payload);
+      const input = z.object({ amountCents: z.number().int().min(2000).max(Number.MAX_SAFE_INTEGER), requestId: z.uuid(), pixKey: z.string().trim().min(3).max(200).optional() }).parse(payload);
       rateLimit('withdrawals:' + user.id, 10, 60000);
-      return json(createWithdrawal(String(user.id), input.amountCents, input.requestId), 201);
+      return json(createWithdrawal(String(user.id), input.amountCents, input.requestId, input.pixKey), 201);
     }
     if (path === 'scratchcards' && post) {
       const user = requireRegistration((await currentUser())!);

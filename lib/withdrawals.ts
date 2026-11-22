@@ -18,13 +18,16 @@ export type Withdrawal = {
   email?: string | null;
 };
 
-export function createWithdrawal(userId: string, amountCents: number, requestId: string) {
+export function createWithdrawal(userId: string, amountCents: number, requestId: string, pixKey?: string) {
   if (!Number.isSafeInteger(amountCents) || amountCents < 2000)
     throw new ApiError(400, 'O saque mínimo é R$ 20,00.');
+  const destination = pixKey?.trim();
+  if (destination && !(/^\+?[0-9]{10,14}$/.test(destination) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destination) || /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(destination)))
+    throw new ApiError(400, 'Informe uma chave Pix válida: CPF, telefone com DDD, e-mail ou chave aleatória.');
   return transaction(() => {
     const existing = one('SELECT * FROM withdrawals WHERE id=?', requestId);
     if (existing) {
-      if (existing.user_id !== userId || Number(existing.amount_cents) !== amountCents)
+      if (existing.user_id !== userId || Number(existing.amount_cents) !== amountCents || (destination && existing.pix_key !== destination))
         throw new ApiError(409, 'Solicitação divergente.');
       return { id: requestId };
     }
@@ -34,7 +37,7 @@ export function createWithdrawal(userId: string, amountCents: number, requestId:
     if (!isValidCpf(cpf)) throw new ApiError(400, 'Cadastre um CPF válido nas configurações da conta.');
     if (Number(user.points) < amountCents) throw new ApiError(400, 'Saldo insuficiente.');
     const now = new Date().toISOString();
-    run('INSERT INTO withdrawals(id,user_id,amount_cents,status,cpf,pix_key,created_at) VALUES(?,?,?,?,?,?,?)', requestId,userId,amountCents,'PENDING',cpf,cpf,now);
+    run('INSERT INTO withdrawals(id,user_id,amount_cents,status,cpf,pix_key,created_at) VALUES(?,?,?,?,?,?,?)', requestId,userId,amountCents,'PENDING',cpf,destination || cpf,now);
     run('UPDATE users SET points=points-? WHERE id=?',amountCents,userId);
     run('INSERT INTO transactions VALUES(?,?,?,?,?,?)',randomUUID(),userId,null,-amountCents,Number(user.points)-amountCents,now);
     audit(userId,'WITHDRAWAL_REQUESTED',{id:requestId,amountCents});

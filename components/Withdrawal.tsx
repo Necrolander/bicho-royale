@@ -17,9 +17,11 @@ type Withdrawal = {
 };
 
 export default function WithdrawalScreen({ registered, balance, cpf, refresh }: { registered: boolean; balance: number; cpf: string | null; refresh: () => Promise<void> }) {
+  const [customPix, setCustomPix] = useState(false);
+  const [pixKey, setPixKey] = useState('');
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
-  const request = useRef<{amount: number; id: string} | null>(null);
+  const request = useRef<{amount: number; id: string; key: string} | null>(null);
   const [items, setItems] = useState<Withdrawal[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(registered);
@@ -38,7 +40,7 @@ export default function WithdrawalScreen({ registered, balance, cpf, refresh }: 
   const renderList = () => {
     if (!items.length) return <div className="withdrawal-empty"><ArrowUpRight size={26} /><b>Seu histórico começa aqui</b><p>Após solicitar um saque, você acompanha o pagamento nesta área.</p></div>;
 
-    return items.map((item) => {
+    return items.slice(0, 5).map((item) => {
       const deadline = new Date(new Date(item.created_at).getTime() + 24 * 60 * 60 * 1000);
       const Icon = item.status === 'APPROVED' ? CheckCircle2 : item.status === 'REJECTED' ? XCircle : Clock3;
       return (
@@ -65,17 +67,19 @@ export default function WithdrawalScreen({ registered, balance, cpf, refresh }: 
     <section className="surface withdrawal-request">
       <span className="eyebrow">SAQUES VIA PIX</span>
       <h2>Transferir via Pix</h2>
-      <p>Informe o valor e confira o destino da transferência.</p><div className="withdrawal-destination"><small>DESTINO DO PAGAMENTO</small><b>Pix · CPF da sua conta</b><span>{cpf || 'Cadastre seu CPF nas configurações da conta.'}</span></div>
+      <p>Informe o valor e confira o destino da transferência.</p><div className="withdrawal-destination"><small>DESTINO DO PAGAMENTO</small><b>{customPix ? 'Outra chave Pix' : 'Pix · CPF da sua conta'}</b><span>{cpf || 'Cadastre seu CPF nas configurações da conta.'}</span><label className="field">Destino<select value={customPix ? 'custom' : 'cpf'} onChange={(event) => setCustomPix(event.target.value === 'custom')}><option value="cpf">CPF cadastrado</option><option value="custom">Usar outra chave Pix</option></select></label>{customPix && <label className="field">Chave Pix<input value={pixKey} onChange={(event) => setPixKey(event.target.value)} placeholder="CPF, telefone, e-mail ou chave aleatória" maxLength={200} /></label>}</div>
       <form onSubmit={async (event) => {
         event.preventDefault();
         const cents = Math.round(Number(amount.replace(',', '.')) * 100);
         if (!Number.isSafeInteger(cents) || cents < 2000) { setMessage('O saque mínimo é R$ 20,00.'); return; }
         if (cents > balance) { setMessage('O valor solicitado é maior que o saldo disponível.'); return; }
         if (busy) return;
-        if (request.current?.amount !== cents) request.current = {amount:cents,id:crypto.randomUUID()};
+        const key = customPix ? pixKey.trim() : '';
+        if (customPix && !key) { setMessage('Informe a chave Pix de destino.'); return; }
+        if (request.current?.amount !== cents || request.current?.key !== key) request.current = {amount:cents,id:crypto.randomUUID(),key};
         setBusy(true);
         try {
-          await api('withdrawals',{amountCents:cents,requestId:request.current.id});
+          await api('withdrawals',{amountCents:cents,requestId:request.current.id,pixKey:key || undefined});
           request.current = null;
           setAmount('');
           setMessage('Solicitação recebida. Pagamento em até 24 horas.');

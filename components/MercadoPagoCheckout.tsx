@@ -316,8 +316,8 @@ export default function MercadoPagoCheckout({
   return (
     <div className={`mp-checkout-container${paymentMethod === 'credit_card' ? ' mp-card-checkout' : ''}`}>
       <div className="mp-checkout-header">
-        <h3>Pagar com Mercado Pago</h3>
-        <button className="mp-close-btn" onClick={onClose}>×</button>
+        <div><small className="mp-provider-label">BICHOS VEGAS · MERCADO PAGO</small><h3>{paymentMethod === 'pix' ? 'Pagamento via Pix' : paymentMethod === 'credit_card' ? 'Pagamento com cartão' : 'Pagamento por boleto'}</h3></div>
+        <button className="mp-close-btn" aria-label="Fechar checkout" onClick={onClose}>×</button>
       </div>
 
       {status === 'approved' && (
@@ -354,7 +354,7 @@ export default function MercadoPagoCheckout({
             <div className="mp-pix-payment">
               <div className="mp-checkout-summary">
                 {isSandbox && <span className="mp-test-badge">SANDBOX · TESTE</span>}
-                <p className="mp-amount">{formatBRL(amountCents)}</p>
+                <div className="mp-total"><small>VALOR DO DEPÓSITO</small><p className="mp-amount">{formatBRL(amountCents)}</p></div>
                 <span className="mp-pending-badge"><i /> Aguardando pagamento</span>
               </div>
               {qrCodeBase64 && (
