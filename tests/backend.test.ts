@@ -9,7 +9,7 @@ const { ownTicket } = await import('../lib/tickets');
 const { enterGroupBatch } = await import('../lib/rounds');
 const { scheduleYoutubeRound, publishYoutubeResult, youtubeVideo } = await import('../lib/rounds');
 const { saveEfiConfig, efiStatus, createPixDeposit } = await import('../lib/efi');
-const { listUserWithdrawals, processWithdrawalAsAdmin } = await import('../lib/withdrawals');
+const { createWithdrawal, listUserWithdrawals, processWithdrawalAsAdmin } = await import('../lib/withdrawals');
 let user: string, round: string;
 beforeAll(() => {
   user = createUser('Teste local', 'test@example.test', 'password-test-123');
@@ -299,5 +299,22 @@ describe('Persistência e transações', () => {
     ).toThrow('abort');
     expect(one('SELECT points FROM users WHERE id=?', user)!.points).toBe(balance);
     expect(db()).toBeDefined();
+  });
+});
+
+describe('Destino Pix do saque', () => {
+  it('salva outra chave mantendo CPF e impede débito duplicado', () => {
+    const owner = createUser('Destino Pix', 'pix-destination@example.test', 'password-test-123');
+    run('UPDATE users SET cpf=?,points=6000 WHERE id=?', '11144477735', owner);
+    const id = randomUUID();
+    createWithdrawal(owner, 2000, id, 'destino@example.test');
+    expect(one('SELECT cpf,pix_key FROM withdrawals WHERE id=?', id)).toMatchObject({cpf:'11144477735',pix_key:'destino@example.test'});
+    createWithdrawal(owner, 2000, id, 'destino@example.test');
+    expect(one('SELECT points FROM users WHERE id=?', owner)?.points).toBe(4000);
+    expect(() => createWithdrawal(owner, 2000, id, 'outro@example.test')).toThrow('divergente');
+    const defaultId = randomUUID();
+    createWithdrawal(owner, 2000, defaultId);
+    expect(one('SELECT pix_key FROM withdrawals WHERE id=?', defaultId)?.pix_key).toBe('11144477735');
+    expect(() => createWithdrawal(owner, 2000, randomUUID(), 'invalida')).toThrow('chave Pix válida');
   });
 });
