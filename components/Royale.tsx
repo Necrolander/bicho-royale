@@ -1365,7 +1365,7 @@ export default function Royale() {
                 </section>
               )}
               {page === 'withdrawal' && (
-                <WithdrawalScreen registered={!!data.user?.email} />
+                <WithdrawalScreen registered={!!data.user?.email} balance={data.user?.points || 0} cpf={data.user?.cpf || null} refresh={load} />
               )}
               {activePage === 'admin' &&
                 (data.user?.role === 'ADMIN' ? (

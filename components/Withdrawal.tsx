@@ -16,7 +16,7 @@ type Withdrawal = {
   admin_note: string | null;
 };
 
-export default function WithdrawalScreen({ registered }: { registered: boolean }) {
+export default function WithdrawalScreen({ registered, balance, cpf, refresh }: { registered: boolean; balance: number; cpf: string | null; refresh: () => Promise<void> }) {
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
   const request = useRef<{amount: number; id: string} | null>(null);
@@ -36,7 +36,7 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
   }, [registered]);
 
   const renderList = () => {
-    if (!items.length) return <p>Nenhum saque solicitado.</p>;
+    if (!items.length) return <div className="withdrawal-empty"><ArrowUpRight size={26} /><b>Seu histórico começa aqui</b><p>Após solicitar um saque, você acompanha o pagamento nesta área.</p></div>;
 
     return items.map((item) => {
       const deadline = new Date(new Date(item.created_at).getTime() + 24 * 60 * 60 * 1000);
@@ -48,7 +48,7 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
             <span className={`withdrawal-status withdrawal-status-${item.status.toLowerCase()}`}><Icon size={14} />{statusLabels[item.status] || 'Em análise'}</span>
           </div>
           <div className="withdrawal-details">
-            <div><small>Solicitado em</small><time dateTime={item.created_at}>{dateFormat.format(new Date(item.created_at))}</time></div>
+            <div><small>Protocolo</small><span title={item.id}>#{item.id.slice(0, 8).toUpperCase()}</span></div><div><small>Solicitado em</small><time dateTime={item.created_at}>{dateFormat.format(new Date(item.created_at))}</time></div>
             {item.status === 'PENDING' && <div><small>Pagamento previsto até</small><time dateTime={deadline.toISOString()}>{dateFormat.format(deadline)}</time></div>}
             {item.processed_at && <div><small>Processado em</small><time dateTime={item.processed_at}>{dateFormat.format(new Date(item.processed_at))}</time></div>}
           </div>
@@ -59,15 +59,18 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
     });
   };
 
-  return <div className="withdrawal-layout">
+  return <div className="withdrawal-layout withdrawal-workspace">
+    <section className="withdrawal-intro"><div><span className="eyebrow">CARTEIRA BICHOS VEGAS</span><h2>Seu saldo. Seu próximo passo.</h2><p>Solicite a transferência via Pix e acompanhe cada atualização por aqui.</p></div><div className="withdrawal-balance"><small>DISPONÍVEL PARA SOLICITAR</small><strong>{formatBRL(balance)}</strong><span>Valor mínimo de R$ 20,00</span></div></section>
+    <div className="withdrawal-columns">
     <section className="surface withdrawal-request">
       <span className="eyebrow">SAQUES VIA PIX</span>
-      <h2>Solicitar saque</h2>
-      <p>Saque mínimo de R$ 20,00. Pagamento via Pix em até 24 horas após a solicitação, no CPF cadastrado na conta.</p>
+      <h2>Transferir via Pix</h2>
+      <p>Informe o valor e confira o destino da transferência.</p><div className="withdrawal-destination"><small>DESTINO DO PAGAMENTO</small><b>Pix · CPF da sua conta</b><span>{cpf || 'Cadastre seu CPF nas configurações da conta.'}</span></div>
       <form onSubmit={async (event) => {
         event.preventDefault();
         const cents = Math.round(Number(amount.replace(',', '.')) * 100);
         if (!Number.isSafeInteger(cents) || cents < 2000) { setMessage('O saque mínimo é R$ 20,00.'); return; }
+        if (cents > balance) { setMessage('O valor solicitado é maior que o saldo disponível.'); return; }
         if (busy) return;
         if (request.current?.amount !== cents) request.current = {amount:cents,id:crypto.randomUUID()};
         setBusy(true);
@@ -77,17 +80,20 @@ export default function WithdrawalScreen({ registered }: { registered: boolean }
           setAmount('');
           setMessage('Solicitação recebida. Pagamento em até 24 horas.');
           setItems(await api('withdrawals'));
+          await refresh();
         } catch (error) { setMessage((error as Error).message); }
         finally { setBusy(false); }
       }}>
-        <label className="field">Valor em R$<input type="number" inputMode="decimal" min="20" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /></label>
-        <button className="primary" disabled={busy || !registered}>{busy ? 'Enviando…' : 'Solicitar saque'}</button>
+        <label className="field">Valor em R$<input type="number" inputMode="decimal" min="20" max={balance / 100} step="0.01" placeholder="0,00" value={amount} onChange={(event) => setAmount(event.target.value)} required /></label>
+<div className="withdrawal-quick"><button type="button" disabled={busy || balance < 2000} onClick={() => setAmount((balance / 100).toFixed(2))}>Usar saldo disponível</button></div>
+        <button className="primary" disabled={busy || !registered || !cpf || balance < 2000}>{busy ? 'Enviando…' : 'Solicitar saque'}</button>
       </form>
       {message && <p role="alert">{message}</p>}
     </section>
+    <aside className="surface withdrawal-explainer"><span className="eyebrow">SOBRE SUA SOLICITAÇÃO</span><h2>Clareza em cada etapa</h2><div><Clock3 size={20} /><section><b>Pagamento em até 24 horas</b><p>O prazo começa no momento em que a solicitação é registrada.</p></section></div><div><ArrowUpRight size={20} /><section><b>Valor reservado no saldo</b><p>Ao solicitar, o valor sai do saldo disponível enquanto aguarda o pagamento.</p></section></div><div><CheckCircle2 size={20} /><section><b>Acompanhamento pela conta</b><p>Veja o status e a data de processamento no histórico. Em caso de rejeição, o valor retorna ao saldo.</p></section></div></aside></div>
     <section className="surface withdrawal-history">
       <span className="eyebrow">SEUS SAQUES</span>
-      <h2>Acompanhe o status</h2>
+      <h2>Histórico de solicitações</h2><p className="withdrawal-history-caption">Valores, prazos e atualizações em um só lugar. Horários de Brasília.</p>
       {loading ? <p role="status">Carregando histórico…</p> : renderList()}
     </section>
   </div>;
