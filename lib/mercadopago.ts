@@ -169,6 +169,14 @@ function mapPaymentMethod(method: 'pix' | 'credit_card' | 'boleto'): string {
   }
 }
 
+function paymentMatchesDeposit(payment: Record<string, unknown>, deposit: { external_reference: unknown; amount_cents: unknown; payment_id?: unknown }) {
+  const id = String(payment.id ?? '');
+  const amount = Math.round(Number(payment.transaction_amount) * 100);
+  return /^\d+$/.test(id) && (!deposit.payment_id || String(deposit.payment_id) === id) &&
+    payment.external_reference === deposit.external_reference && payment.currency_id === 'BRL' &&
+    Number.isSafeInteger(amount) && amount === Number(deposit.amount_cents);
+}
+
 export function mercadoPagoPayer(userId: string) {
   const account = one('SELECT cpf FROM users WHERE id=?', userId);
   const cpf = normalizeCpf(String(account?.cpf || ''));
@@ -204,6 +212,7 @@ export async function createMercadoPagoPayment(
     audit(userId, 'MP_DEPOSIT_REQUESTED', { id, externalReference, amountCents, paymentMethod });
   });
 
+  let providerAccepted = false;
   try {
     const payerData: Record<string, unknown> = {
       email: payerEmail,
@@ -228,6 +237,10 @@ export async function createMercadoPagoPayment(
     }
 
     const response = await mpRequest(config, 'POST', '/payments', paymentData, externalReference);
+    if (String(response.status).toLowerCase() === 'approved' &&
+        !paymentMatchesDeposit(response, { external_reference: externalReference, amount_cents: amountCents }))
+      throw new ApiError(502, 'Os dados do pagamento aprovado divergem do depósito solicitado.');
+    providerAccepted = true;
     const pointOfInteraction = response.point_of_interaction as
       | { transaction_data?: { qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }; qr_code?: unknown; qr_code_base64?: unknown; ticket_url?: unknown }
       | undefined;
@@ -289,7 +302,8 @@ export async function createMercadoPagoPayment(
     return result;
   } catch (error) {
     transaction(() => {
-      run("UPDATE mercadopago_deposits SET status=? WHERE id=? AND status='CREATING'", 'ERROR', id);
+      // Keep accepted payments recoverable by webhook/search after a local persistence failure.
+      if (!providerAccepted) run("UPDATE mercadopago_deposits SET status=? WHERE id=? AND status='CREATING'", 'ERROR', id);
       audit(userId, 'MP_DEPOSIT_FAILED', { id, externalReference });
     });
     throw error;
@@ -338,9 +352,7 @@ async function processPaymentResponse(userId: string, depositId: string, payment
     const row = one('SELECT * FROM mercadopago_deposits WHERE id=?', depositId);
     const paymentId = String(payment.id ?? '');
     if (
-      row && payment.external_reference === row.external_reference &&
-      /^\d+$/.test(paymentId) && (!row.payment_id || String(row.payment_id) === paymentId) &&
-      payment.currency_id === 'BRL' && paidCents === Number(row.amount_cents)
+      row && row.user_id === userId && paymentMatchesDeposit(payment, row as {external_reference:unknown;amount_cents:unknown;payment_id?:unknown})
     ) {
       transaction(() => {
         const current = one('SELECT status, credited_at FROM mercadopago_deposits WHERE id=?', depositId);
